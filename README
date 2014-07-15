@@ -3,7 +3,7 @@ corrected_bi-bipoly
 //Kundan Kadam July 15 2014
 
 Purpose:
-1. Creates a corotating polytropic bipolytropic binary system in cylindrical coordinates.
+1. Creates a corotating bipolytropic binary system in cylindrical coordinates.
    This means that each star can have a core and envelope with different polytropic indices and
    there can be a molecular weight jump between the core-envelope boundary.
 3. The output can be used in hydrodynamics code as initial model.

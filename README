@@ -15,5 +15,12 @@ Required:
    C = Inner edge of the secondary
    D = Inner/ outer core boundary for primary
    E =  Inner/ outer core boundary for secondary
-
-
+   Specified in file init, starting second number, second line.
+   
+How to use:
+1. For the very first run with given resolution, make sure that in main.F90, have_green_funcs = .false.
+   This can be changed to .true. for later runs with the same resolutions for a faster runtime.
+2. Do:
+   >> make clean
+   >> make
+   >> ./scf

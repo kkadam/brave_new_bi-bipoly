@@ -3,10 +3,10 @@ corrected_bi-bipoly
 //Kundan Kadam July 15 2014
 
 Purpose:
-1. Creates a corotating polytropic binary system in cylindrical coordinates.
-2. Each star can have a core and envelope with different polytropic indices.
-3. There can be a molecular weight jump between the core-envelope boundary.
-4. The output can be used in hydrodynamics code as initial model.
+1. Creates a corotating polytropic bipolytropic binary system in cylindrical coordinates.
+   This means that each star can have a core and envelope with different polytropic indices and
+   there can be a molecular weight jump between the core-envelope boundary.
+3. The output can be used in hydrodynamics code as initial model.
 
 Required:
 1. Nothing except reasonable guesses of the boundaries A, B, C, D and E of the binary system.
@@ -25,3 +25,8 @@ How to use:
    >> make clean
    >> make
    >> ./scf
+   
+Note:
+Code is also known as bi-bipolytrope or SCF code. The very first attempt at creating biplytropic binary 
+had some issues with convergence. Patrick Motl provided me with a version of SCF with different Poisson 
+solver, which works, hence the name.

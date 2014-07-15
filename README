@@ -16,6 +16,7 @@ Required:
    D = Inner/ outer core boundary for primary
    E =  Inner/ outer core boundary for secondary
    Specified in file init, starting second number, second line.
+2. Other needed parameters are specified in runscf.h file.
    
 How to use:
 1. For the very first run with given resolution, make sure that in main.F90, have_green_funcs = .false.

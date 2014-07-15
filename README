@@ -1,5 +1,19 @@
 corrected_bi-bipoly
 ===================
+//Kundan Kadam July 15 2014
+
 Purpose:
-1. Creates a corotating polytropic binary system which is self consistent.
-2. 
+1. Creates a corotating polytropic binary system in cylindrical coordinates.
+2. Each star can have a core and envelope with different polytropic indices.
+3. There can be a molecular weight jump between the core-envelope boundary.
+4. The output can be used in hydrodynamics code as initial model.
+
+Required:
+1. Nothing except reasonable guesses of the boundaries A, B, C, D and E of the binary system.
+   A = Outer edge of the primary
+   B = Inner edge of the primary
+   C = Inner edge of the secondary
+   D = Inner/ outer core boundary for primary
+   E =  Inner/ outer core boundary for secondary
+
+

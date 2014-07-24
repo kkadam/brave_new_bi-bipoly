@@ -516,6 +516,7 @@ write(11,*) 'Mass Core 1', mass_c1(qfinal)
 write(11,*) 'Core mass ratio 1:', mass_c1(qfinal)/mass1(qfinal)
 write(11,*) '(<x>,<y>): ', xavg1, yavg1
 write(11,*) 'Maximum Density: ', rhom1
+write(11,*) 'Core above density threshold: ', rho_1d
 write(11,*) 'Polytropic Index Core: ',nc1
 write(11,*) 'Polytropic Index Envelope: ',n1       
 write(11,*) 'Polytropic Constant Core: ',kappac1
@@ -551,6 +552,7 @@ write(11,*) 'Mass Core 2', mass_c2(qfinal)
 write(11,*) 'Core mass ratio 2:', mass_c2(qfinal)/mass2(qfinal)
 write(11,*) '(<x>,<y>): ', xavg2, yavg2
 write(11,*) 'Maximum Density: ', rhom2
+write(11,*) 'Core above density threshold: ', rho_2e
 write(11,*) 'Polytropic Index Core: ',nc2
 write(11,*) 'Polytropic Index Envelope: ',n2       
 write(11,*) 'Polytropic Constant Core: ',kappac2

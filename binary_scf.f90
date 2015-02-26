@@ -465,9 +465,9 @@ subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, &
       exit
    endif
 
-   if ( virial_error > virial_error_prev .and. Q > 10  ) then
-      exit
-   endif
+!   if ( virial_error > virial_error_prev .and. Q > 10  ) then
+!      exit
+!   endif
 
 enddo                                               
 ! END OF THE ITERATION CYCLE

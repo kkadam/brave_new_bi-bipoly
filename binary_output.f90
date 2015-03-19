@@ -91,16 +91,22 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real :: temp_rch
   real, dimension(3) :: temp_rch_loc
   real :: l2loc, l3loc, temp_l2loc, temp_l3loc
+  real :: rho1i, rho2i
   integer :: louter1,  louter2
   integer :: I, J, K, L
   integer :: index
   character(len=50) :: model_template
   character(len=56) :: model_file
-
+integer :: phi1, phi2, phi3, phi4
 !
 !*****************************************************************************************
 
   model_template = 'model_details_'
+
+phi1 = int(numphi / 4.0) - 1
+phi2 = int(numphi /  4.0) + 1
+phi3 = int(3.0 * numphi / 4.0) - 1
+phi4 = int(3.0 * numphi / 4.0) + 1
 
   gammae1 = 1.0 + 1.0/n1
   gammae2 = 1.0 + 1.0/n2
@@ -187,10 +193,19 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   pm1 = rhom1 * hm1(qfinal) / (nc1 + 1.0)
   pm2 = rhom2 * hm2(qfinal) / (nc2 + 1.0)
   
-  kappac1 = hm1(qfinal)/(nc1+1.0)*rhom1**(gammac1)
-  kappac2 = hm2(qfinal)/(nc2+1.0)*rhom2**(gammac2)
+  kappac1 = rhom1*hm1(qfinal)/(nc1+1.0)/rhom1**(gammac1)
+  kappac2 = rhom2*hm2(qfinal)/(nc2+1.0)/rhom2**(gammac2)
   kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
   kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
+
+print*,"=============================================="
+print*, "rho_1d", rho_1d, "rho_c1d", rho_c1d ,"FINAL" 
+print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e ,"FINAL" 
+print*, "nc1", nc1, "gammac1", gammac1, "gammae1", gammae1 
+print*, "nc2", nc2, "gammac2", gammac2, "gammae2", gammae2 
+print*, "Qfinal", qfinal
+print*, "hm1", hm1(qfinal), "hm2", hm2(qfinal) 
+
 
   period = 2.0 * pi /  omega
   kepler = (separation**3) * omega * omega / (mass1(qfinal) + mass2(qfinal))
@@ -604,5 +619,13 @@ write(11,*)
 close(11)
 	 
 print*, "File", trim(model_file), "printed"
+
+rho1i = (rho_1d+rho_c1d)/2.0
+rho2i = (rho_2e+rho_c2e)/2.0
+
+open(unit=13,file="autoread.dat")
+write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, " ",&
+     omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho1i, " ", rho2i
+close(13)
 
 end subroutine binary_output

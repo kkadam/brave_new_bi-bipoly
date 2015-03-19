@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -q single
+#PBS -A loni_lrn01
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=24:00:00
+#PBS -o pbs_out
+#PBS -j oe
+#PBS -N scf_hd
+
+cd $PBS_O_WORKDIR
+/work/kkadam/scf_runs/m6/scf
+
+
+
+

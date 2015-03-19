@@ -32,21 +32,21 @@ logical, intent(inout) :: have_green_funcs
 !*
 !*  Global Variables
 
-real, dimension(numr,numz,numr,mmax) :: tmr
-real, dimension(numr,numz,numz,mmax) :: smz
+real, dimension(numr_dd,numz_dd,numr,mmax) :: tmr
+real, dimension(numr_dd,numz_dd,numz,mmax) :: smz
 common /green_functions/ tmr, smz
 
 real, dimension(numphi,mmax) :: bes_cos, bes_sin
 common /bessel_trig/ bes_cos, bes_sin
 
 real, dimension(numr) :: ar, cr, alphar
-real, dimension(numr,numphi) :: brb
+real, dimension(numr,numphi_dd) :: brb
 common /ADI_R_sweep/ ar, cr, alphar, brb
 
 real :: az, cz
-real, dimension(numr) :: alphaz, betaz
+real, dimension(numr_dd_z) :: alphaz, betaz
 real, dimension(numz) :: bzb
-real, dimension(numr,numphi) :: elambdazb
+real, dimension(numr_dd_z,numphi_dd) :: elambdazb
 common /ADI_Z_sweep/ az, cz, alphaz, betaz, bzb, elambdazb
 
 real :: gamma, piinv, four_pi
@@ -67,6 +67,21 @@ integer :: isym
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ isym, boundary_condition
 
+logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
+           iam_on_edge, iam_root
+integer :: column_num, row_num
+integer :: iam, down_neighbor, up_neighbor,                  &
+           in_neighbor, out_neighbor, root,                  &
+           REAL_SIZE, INT_SIZE, numprocs
+integer, dimension(numr_procs,numz_procs) :: pe_grid
+common /processor_grid/ iam, numprocs, iam_on_top,           &
+                        iam_on_bottom, iam_on_axis,          &
+                        iam_on_edge, down_neighbor,          &
+                        up_neighbor, in_neighbor,            &
+                        out_neighbor, root, column_num,      &
+                        row_num, pe_grid, iam_root,          &
+                        REAL_SIZE, INT_SIZE
+
 !*
 !********************************************************************
 !*
@@ -74,11 +89,11 @@ common /boundary_conditions/ isym, boundary_condition
   
 real :: mindex, lindex, drinv2, dphiinv2
 
-real, dimension(numphi) :: elm, m1mode
+real, dimension(numphi_dd) :: elm, m1mode
 
 real, dimension(numr) :: betar
 
-integer :: J, K, L, M, lstop, index, mode
+integer :: J, K, L, M, lstop, index, mode, loffset
 
 !*
 !********************************************************************
@@ -97,6 +112,7 @@ enddo
 lstop = 0
 index = 0
 mode = 0 
+loffset = 0
 
 piinv = 1.0 / pi
 four_pi = 4.0 * pi
@@ -139,8 +155,8 @@ if ( have_green_funcs ) then
 else
    call tm(tmr)
    call sm(smz)
-   open(unit=20,file='tmr_array',form='unformatted',status='new')
-   open(unit=21,file='smz_array',form='unformatted',status='new')
+   open(unit=20,file='tmr_array',form='unformatted',status='unknown')!'new')
+   open(unit=21,file='smz_array',form='unformatted',status='unknown')!'new')
    write(20) tmr
    write(21) smz
    close(20)
@@ -156,18 +172,19 @@ drinv2 = drinv * drinv
 dphiinv2 = dphiinv * dphiinv
 
 lstop = numphi_by_two + 1
-do L = 1, numphi
+loffset = column_num * numphi_dd
+do L = 1, numphi_dd
    if( isym == 3 ) then
-      if( L <= lstop ) then
-         mode = (L-1)*(L-1)
+      if( L + loffset <= lstop ) then
+         mode = (L+loffset-1)*(L+loffset-1)
       else
-         mode = (L-lstop)*(L-lstop)     
+         mode = (L+loffset-lstop)*(L+loffset-lstop)     
       endif
    else
-      if( L <= lstop ) then
-         mode = L - 1
+      if( L + loffset <= lstop ) then
+         mode = L +loffset - 1
       else
-         mode = L - lstop
+         mode = L + loffset - lstop
       endif
    endif
    m1mode(L) = (-1.0)**mode
@@ -185,8 +202,8 @@ enddo
 ! have to used indexed global radius array to initialize 
 ! alphaz and betaz because they will be used when the radial
 ! data is block distributed across numz_procs
-index = 2
-do J = 2, numr-1
+index = 2 + row_num * (numr_dd_z-2)
+do J = 2, numr_dd_z-1
 
    alphaz(J) = -r_g(index+1)*rhfinv_g(index)*drinv2
 
@@ -204,20 +221,20 @@ az = - gamma
  
 cz = - gamma
 
-do L = 1, numphi
+do L = 1, numphi_dd
    do J = 3, numr-1
       brb(J,L) = 2.0*drinv2 - 2.0*(elm(L)-1.0)*dphiinv2*           &
                  rhfinv_g(J)*rhfinv_g(J)
    enddo
 enddo
 if( isym == 3 ) then
-   do L = 1, numphi
+   do L = 1, numphi_dd
       brb(2,L) = -alphar(2) - 2.0*betar(2) - 2.0*                  &
                   (elm(L)-1.0)*dphiinv2*rhfinv_g(2)*               &
                   rhfinv_g(2)
    enddo
 else
-   do L = 1, numphi
+   do L = 1, numphi_dd
       brb(2,L) = -alphar(2) + (m1mode(L)-1.0)*betar(2) -           &
                   2.0*(elm(L)-1.0)*dphiinv2*rhfinv_g(2)*           &
                   rhfinv_g(2)
@@ -229,24 +246,24 @@ do K = 2, numz-1
 enddo
 if( isym /= 1 ) bzb(2) = gamma
 
-do L = 1, numphi
-   index = 2
-   do J = 2, numr-1
+do L = 1, numphi_dd
+   index = 2 + row_num * (numr_dd_z-2)
+   do J = 2, numr_dd_z-1
       elambdazb(J,L) = -2.0*drinv2 + 2.0*(elm(L)-1.0)*             &
                         dphiinv2*rhfinv_g(index)*                  &
                         rhfinv_g(index)
       index = index + 1
    enddo
 enddo
-if( isym == 3 ) then
-   do L = 1, numphi
+if( isym == 3 .and. row_num == 0 ) then
+   do L = 1, numphi_dd
       elambdazb(2,L) = alphaz(2) + 2.0*betaz(2) + 2.0*             &
                        (elm(L)-1.0)*dphiinv2*rhfinv_g(2)*          &
                        rhfinv_g(2)
    enddo
 endif
-if( isym /= 3 ) then
-   do L = 1, numphi
+if( isym /= 3 .and. row_num == 0 ) then
+   do L = 1, numphi_dd
       elambdazb(2,L) = alphaz(2) - (m1mode(L)-1.0)*betaz(2) +      &
                        2.0*(elm(L)-1.0)*dphiinv2*rhfinv_g(2)*      &
                        rhfinv_g(2)

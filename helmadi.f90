@@ -30,17 +30,17 @@ integer :: nsteps
 !*
 !*  Global Variables
 
-real, dimension(numr,numz,numphi) :: potp, rhop
+real, dimension(numr_dd,numz_dd,numphi) :: potp, rhop
 common /potarrays/ potp, rhop
 
 real, dimension(numr) :: ar, cr, alphar
-real, dimension(numr,numphi) :: brb
+real, dimension(numr,numphi_dd) :: brb
 common /ADI_R_sweep/ ar, cr, alphar, brb
 
 real :: az, cz
-real, dimension(numr) :: alphaz, betaz
+real, dimension(numr_dd_z) :: alphaz, betaz
 real, dimension(numz) :: bzb
-real, dimension(numr,numphi) :: elambdazb
+real, dimension(numr_dd_z,numphi_dd) :: elambdazb
 common /ADI_Z_sweep/ az, cz, alphaz, betaz, bzb, elambdazb
 
 real :: gamma, piinv, four_pi
@@ -54,22 +54,37 @@ integer :: isym
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ isym, boundary_condition
 
+logical :: iam_on_top, iam_on_bottom, iam_on_axis,               &
+           iam_on_edge, iam_root
+integer :: column_num, row_num
+integer :: iam, down_neighbor, up_neighbor,                      &
+           in_neighbor, out_neighbor, root,                      &
+           REAL_SIZE, INT_SIZE, numprocs
+integer, dimension(numr_procs,numz_procs) :: pe_grid
+common /processor_grid/ iam, numprocs, iam_on_top,               &
+                        iam_on_bottom, iam_on_axis,              &
+                        iam_on_edge, down_neighbor,              &
+                        up_neighbor, in_neighbor,                &
+                        out_neighbor, root, column_num,          &
+                        row_num, pe_grid, iam_root,              &
+                        REAL_SIZE, INT_SIZE 
+
 !*
 !********************************************************************
 !*
 !*  Local Variables
   
-real, dimension(numr,numz,numphi) :: ffrho, ffpot
+real, dimension(numr_dd,numz_dd,numphi) :: ffrho, ffpot
 
-real, dimension(numr,numz,numphi) :: knownr, rhor, potr
+real, dimension(numr,numz_dd,numphi_dd) :: knownr, rhor, potr
 
-real, dimension(numr,numz,numphi) :: knownz, rhoz, potz
+real, dimension(numr_dd_z,numz,numphi_dd) :: knownz, rhoz, potz
 
 real, dimension(numz) :: bz
 
-real, dimension(numr,numphi) :: br
+real, dimension(numr,numphi_dd) :: br
 
-real, dimension(numr,numphi) :: elambdaz
+real, dimension(numr_dd_z,numphi_dd) :: elambdaz
 
 integer :: I, J, K, L, index
 
@@ -80,36 +95,22 @@ real, dimension(nsteps) :: dt
 !*
 !********************************************************************
 ! initialize the local variables
-do L = 1, numphi
-   do K = 1, numz
-      do J = 1, numr
-         ffrho(J,K,L)  = 0.0
-         ffpot(J,K,L)  = 0.0
-         knownr(J,K,L) = 0.0
-         rhor(J,K,L)   = 0.0
-         potr(J,K,L)   = 0.0
-         knownz(J,K,L) = 0.0
-         rhoz(J,K,L)   = 0.0
-         potz(J,K,L)   = 0.0
-      enddo
-   enddo
-enddo
-do K = 1, numz
-   bz(K) = 0.0
-enddo
-do L = 1, numphi
-   do J = 1, numr
-      br(J,L)       = 0.0
-      elambdaz(J,L) = 0.0
-   enddo
-enddo
+ffrho =  0.0
+ffpot = 0.0
+knownr = 0.0
+rhor = 0.0
+potr = 0.0
+knownz = 0.0
+rhoz = 0.0
+potz = 0.0
+bz = 0.0
+br = 0.0
+elambdaz= 0.0
 index = 0
 alph = 0.0
 dtt = 0.0
 dtt_mtwogamma = 0.0 
-do L = 1, nsteps
-   dt(L) = 0.0
-enddo
+dt = 0.0
 
 !  setup the pseudo timesteps for the ADI iterations
 !  the values for the timestep have been chosen to
@@ -122,17 +123,17 @@ do I = 2, nsteps
 enddo 
 
 !  fourier transform the density and re-order the output
-call realft(rhop,numr,numz,numphi,+1)
-do K = 1, numz
-   do J = 1, numr
+call realft(rhop,numr_dd,numz_dd,numphi,+1)
+do K = 1, numz_dd
+   do J = 1, numr_dd
       ffrho(J,K,1) = rhop(J,K,1)
       ffrho(J,K,numphi_by_two+1) = rhop(J,K,2)
    enddo
 enddo
 index = 3
 do L = 2, numphi_by_two
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          ffrho(J,K,L) = rhop(J,K,index)
       enddo
    enddo
@@ -140,8 +141,8 @@ do L = 2, numphi_by_two
 enddo
 index = 4
 do L = numphi_by_two+2, numphi
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          ffrho(J,K,L) = - rhop(J,K,index)
       enddo
    enddo
@@ -149,17 +150,17 @@ do L = numphi_by_two+2, numphi
 enddo
 
 !  fourier transform the potential and re-order
-call realft(potp,numr,numz,numphi,+1)
-do K = 1, numz
-   do J = 1, numr
+call realft(potp,numr_dd,numz_dd,numphi,+1)
+do K = 1, numz_dd
+   do J = 1, numr_dd
       ffpot(J,K,1) = potp(J,K,1)
       ffpot(J,K,numphi_by_two+1) = potp(J,K,2)
    enddo
 enddo
 index = 3
 do L = 2, numphi_by_two
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          ffpot(J,K,L) = potp(J,K,index)
       enddo
    enddo
@@ -167,15 +168,22 @@ do L = 2, numphi_by_two
 enddo
 index = 4
 do L = numphi_by_two+2, numphi
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          ffpot(J,K,L) = - potp(J,K,index)
       enddo
    enddo
    index = index + 2
 enddo
 
+!  make sure all pes are starting with correct guard cell values
+!call comm(ffpot)
+!call comm(ffrho)
+ 
 !  swap arrays around to get data aligned for ADI iteration
+!call swap_phi_r(ffpot,potr)
+!call swap_phi_r(ffrho,rhor)
+!call swap_r_z(rhor,rhoz)
 do L = 1, numphi
    do K = 1, numz
       do J = 1, numr
@@ -195,21 +203,15 @@ do I = 1, nsteps
 
    ! Radial ADI sweep
 
-   do L = 1, numphi
+   do L = 1, numphi_dd
       do J = 1, numr
          br(J,L) = brb(J,L) + dtt
       enddo
    enddo
 
-   do L = 1, numphi
-      do K = 1, numz
-         do J = 1, numr
-            knownr(J,K,L) = 0.0
-         enddo
-      enddo
-   enddo
+   knownr = 0.0
 
-   if( isym /= 1 ) then
+   if( iam_on_bottom .and. isym /= 1 ) then
       !  the conditional looks a little stange, here is the deal...
       !  in this data decomposition, the vertical index is block
       !  distributed across numz_procs, for the global K index of
@@ -219,8 +221,8 @@ do I = 1, nsteps
       !  is different.  Do this to impose symmetry between solution
       !  at K = 1 and K = 2 when solution at K = 2 is not known
       !  initially
-      do L = 1, numphi
-         do K = 3, numz-1
+      do L = 1, numphi_dd
+         do K = 3, numz_dd-1
             do J = 2, numr-1
                knownr(J,K,L) = -four_pi * rhor(J,K,L) +                &
                                 dtt_mtwogamma*potr(J,K,L) +            &
@@ -230,7 +232,7 @@ do I = 1, nsteps
       enddo
       ! the special case
       K = 2
-      do L = 1, numphi
+      do L = 1, numphi_dd
          do J = 2, numr-1
             knownr(J,K,L) = - four_pi * rhor(J,K,L) +                  &
                               (dtt-gamma)*potr(J,K,L) +                &
@@ -238,8 +240,8 @@ do I = 1, nsteps
          enddo
       enddo
    else
-      do L = 1, numphi
-         do K = 2, numz-1
+      do L = 1, numphi_dd
+         do K = 2, numz_dd-1
             do J = 2, numr-1
                knownr(J,K,L) = - four_pi * rhor(J,K,L) +               &
                                  dtt_mtwogamma*potr(J,K,L) +           &
@@ -250,8 +252,8 @@ do I = 1, nsteps
    endif
 
    !  add in the boundary potential on side to knownr
-   do L = 1, numphi
-      do K = 2, numz-1
+   do L = 1, numphi_dd
+      do K = 2, numz_dd-1
          knownr(numr-1,K,L) = knownr(numr-1,K,L) -        &
                      alphar(numr-1)*potr(numr,K,L)
       enddo
@@ -260,8 +262,12 @@ do I = 1, nsteps
    !  solve the system of equations
    call tridagr(ar,br,cr,knownr,potr)
 
+   ! communicate guard cell values
+   !call comm_r_sweep(potr)
+
    !  go from having all J values in local memory to having
    !  all K values in local memory to do the vertical ADI sweep
+   !call swap_r_z(potr,potz)
    do L = 1, numphi
       do K = 1, numz
          do J = 1, numr
@@ -276,54 +282,67 @@ do I = 1, nsteps
       bz(K) = bzb(K) + dtt
    enddo
 
-   do L = 1, numphi
-      do J = 1, numr
+   do L = 1, numphi_dd
+      do J = 1, numr_dd_z
          elambdaz(J,L) = elambdazb(J,L) + dtt
       enddo
    enddo
 
    knownz = 0.0
 
-   ! now the special case is independent of isym and exists for
-   ! the global radial index J = 2.  We have swapped having all
-   ! J values in local memory to having all K values in local 
-   ! memory with J block distributed across numz_procs so pe's
-   ! on the bottom of the pe grid hold the special case radial
-   ! index.  The special case is that knownz with J of 2 doesn't
-   ! include the influence of potz with J = 1.  Do this to impose
-   ! consistent boundary condition across the z axis.
-   do L = 1, numphi
-      do K = 2, numz-1
-         do J = 3, numr-1
-            knownz(J,K,L) = - four_pi * rhoz(J,K,L) +        &
-                              elambdaz(J,L)*potz(J,K,L) -    &
-                              alphaz(J)*potz(J+1,K,L) -      &
-                              betaz(J)*potz(J-1,K,L)
+   if( iam_on_bottom ) then
+      ! now the special case is independent of isym and exists for
+      ! the global radial index J = 2.  We have swapped having all
+      ! J values in local memory to having all K values in local 
+      ! memory with J block distributed across numz_procs so pe's
+      ! on the bottom of the pe grid hold the special case radial
+      ! index.  The special case is that knownz with J of 2 doesn't
+      ! include the influence of potz with J = 1.  Do this to impose
+      ! consistent boundary condition across the z axis.
+      do L = 1, numphi_dd
+         do K = 2, numz-1
+            do J = 3, numr_dd_z-1
+               knownz(J,K,L) = - four_pi * rhoz(J,K,L) +        &
+                                 elambdaz(J,L)*potz(J,K,L) -    &
+                                 alphaz(J)*potz(J+1,K,L) -      &
+                                 betaz(J)*potz(J-1,K,L)
+            enddo
          enddo
       enddo
-   enddo
-   ! the sepcial case
-   J = 2
-   do L = 1, numphi
-      do K = 2, numz-1
-         knownz(J,K,L) = - four_pi * rhoz(J,K,L) +           &
-                           elambdaz(J,L)*potz(J,K,L) -       &
-                           alphaz(J)*potz(J+1,K,L)
+      ! the sepcial case
+      J = 2
+      do L = 1, numphi_dd
+         do K = 2, numz-1
+            knownz(J,K,L) = - four_pi * rhoz(J,K,L) +           &
+                              elambdaz(J,L)*potz(J,K,L) -       &
+                              alphaz(J)*potz(J+1,K,L)
+         enddo
       enddo
-   enddo
+   else
+      do L = 1, numphi_dd
+         do K = 2, numz-1
+            do J = 2, numr_dd_z-1
+               knownz(J,K,L) = - four_pi * rhoz(J,K,L) +        &
+                                 elambdaz(J,L)*potz(J,K,L) -    &
+                                 alphaz(J)*potz(J+1,K,L) -      &
+                                 betaz(J)*potz(J-1,K,L)
+            enddo
+         enddo
+      enddo
+   endif
 
    ! add boundary potential at top and (if isym = 1)
    ! bottom of the grid to knownz
-   do L = 1, numphi
-      do J = 2, numr-1
+   do L = 1, numphi_dd
+      do J = 2, numr_dd_z-1
          knownz(J,numz-1,L) = knownz(J,numz-1,L) +     &
                   gamma * potz(J,numz,L)
       enddo
    enddo
 
    if( isym == 1 ) then
-      do L = 1, numphi
-         do J = 2, numr-1
+      do L = 1, numphi_dd
+         do J = 2, numr_dd_z-1
             knownz(J,2,L) = knownz(J,2,L) + gamma*potz(J,1,L)
          enddo
       enddo
@@ -332,11 +351,15 @@ do I = 1, nsteps
    ! solve the system of equations
    call tridagz(az,bz,cz,knownz,potz)
 
+   ! communicate guard cell values
+   !call comm_z_sweep(potz)
+ 
    ! rearrange the data so that K is block distributed
    ! and J is in local memory to get ready for the next
    ! iteration or to rearrange the data so that J is
    ! block distributed and l is in local memory after
    ! leaving ADI iteration loop
+   !call swap_z_r(potz,potr)
    do L = 1, numphi
       do K = 1, numz
          do J = 1, numr
@@ -347,6 +370,7 @@ do I = 1, nsteps
 
 enddo     ! END of ADI cycle
 
+!call swap_r_phi(potr,ffpot)
 do L = 1, numphi
    do K = 1, numz
       do J = 1, numr
@@ -356,16 +380,16 @@ do L = 1, numphi
 enddo
 
 ! inverse fourier transform the potential
-do K = 1, numz
-   do J = 1, numr
+do K = 1, numz_dd
+   do J = 1, numr_dd
       potp(J,K,1) = ffpot(J,K,1)
       potp(J,K,2) = ffpot(J,K,numphi_by_two+1)
    enddo
 enddo
 index = 3
 do L = 2, numphi_by_two
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          potp(J,K,index) = ffpot(J,K,L)
       enddo
    enddo
@@ -373,18 +397,18 @@ do L = 2, numphi_by_two
 enddo
 index = 4
 do L = numphi_by_two+2, numphi
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          potp(J,K,index) = - ffpot(J,K,L)
       enddo
    enddo
    index = index + 2
 enddo 
-call realft(potp,numr,numz,numphi,-1) ! this call dies...
+call realft(potp,numr_dd,numz_dd,numphi,-1) ! this call dies...
 ! Fourier transform normalization
 do L = 1, numphi
-   do K = 1, numz
-      do J = 1, numr
+   do K = 1, numz_dd
+      do J = 1, numr_dd
          potp(J,K,L) = 2.0 * numphiinv * potp(J,K,L)
       enddo
    enddo
@@ -392,28 +416,24 @@ enddo
 
 ! impose boundary conditions on the potential across the
 ! z axis and across the equatorial plane
-if( isym == 3 ) then
-   do L = 1, numphi
-      do K = 1, numz
-         potp(1,K,L) = potp(2,K,L)
+if( iam_on_axis ) then
+   if( isym == 3 ) then
+      potp(1,:,:) = potp(2,:,:)
+   else
+      do L= 1, numphi_by_two
+         potp(1,:,L) = potp(2,:,L+numphi_by_two)
+         potp(1,:,L+numphi_by_two) = potp(2,:,L)
       enddo
-   enddo
-else
-   do L= 1, numphi_by_two
-      do K = 1, numz
-         potp(1,K,L) = potp(2,K,L+numphi_by_two)
-         potp(1,K,L+numphi_by_two) = potp(2,K,L)
-      enddo
-   enddo
+   endif
 endif
 
-if( isym == 2 .or. isym == 3 ) then
-   do L = 1, numphi
-      do J = 1, numr
-         potp(J,1,L) = potp(J,2,L)
-      enddo
-   enddo
+if( iam_on_bottom ) then
+   if( isym == 2 .or. isym == 3 ) then
+      potp(:,1,:) = potp(:,2,:)
+   endif
 endif
 
+! fill in guard cells with the potential from neighbors
+!call comm(potp)
 return
 end subroutine helmadi

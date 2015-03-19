@@ -19,9 +19,9 @@ include 'runscf.h'
 
 real, dimension(numr) :: ar, cr
 
-real, dimension(numr,numphi) :: br
+real, dimension(numr,numphi_dd) :: br
 
-real, dimension(numr,numz,numphi) :: knownr, potr
+real, dimension(numr,numz_dd,numphi_dd) :: knownr, potr
 
 !*
 !***************************************************************************
@@ -43,23 +43,23 @@ do L = 1, numphi
 enddo
 
 ! setup
-do L = 1, numphi
+do L = 1, numphi_dd
    bet(2,L) = br(2,L)
 enddo
-do L = 1, numphi
+do L = 1, numphi_dd
    do K = zlwb, zupb
       potr(2,K,L) = knownr(2,K,L) / bet(2,L)
    enddo
 enddo
 
 !  decomposition and forward substitution
-do L = 1, numphi
+do L = 1, numphi_dd
    do J = 3, numr-1
       gam(J,L) = cr(J-1) / bet(J-1,L)
       bet(J,L) = br(J,L) - ar(J)*gam(J,L)
    enddo
 enddo
-do L = 1, numphi
+do L = 1, numphi_dd
    do K = zlwb, zupb
       do J = 3, numr-1
          potr(J,K,L) = (knownr(J,K,L)-ar(J)*potr(J-1,K,L)) / bet(J,L)
@@ -68,7 +68,7 @@ do L = 1, numphi
 enddo
 
 ! back subsitution
-do L = 1, numphi
+do L = 1, numphi_dd
    do K = zlwb, zupb
       do J = numr-2, 2, -1
          potr(J,K,L) = potr(J,K,L) - gam(J+1,L)*potr(J+1,K,L)

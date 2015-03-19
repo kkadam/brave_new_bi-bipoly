@@ -15,10 +15,10 @@ include 'runscf.h'
 !*
 !*   Global Variables
 
-real, dimension(numr,numz,numphi) :: pot, rho
+real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr,numz,numphi) :: potp, rhop
+real, dimension(numr_dd,numz_dd,numphi) :: potp, rhop
 common /potarrays/ potp, rhop
 
 real :: dt, time, dt_visc
@@ -29,6 +29,21 @@ integer :: isym
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ isym, boundary_condition
 
+logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
+           iam_on_edge, iam_root
+integer :: column_num, row_num
+integer :: iam, down_neighbor, up_neighbor,                  &
+           in_neighbor, out_neighbor, root,                  &
+           REAL_SIZE, INT_SIZE, numprocs
+integer, dimension(numr_procs,numz_procs) :: pe_grid
+common /processor_grid/ iam, numprocs, iam_on_top,           &
+                        iam_on_bottom, iam_on_axis,          &
+                        iam_on_edge, down_neighbor,          &
+                        up_neighbor, in_neighbor,            &
+                        out_neighbor, root, column_num,      &
+                        row_num, pe_grid, iam_root,          &
+                        REAL_SIZE, INT_SIZE
+
 !*
 !*************************************************************
 !*
@@ -36,50 +51,24 @@ common /boundary_conditions/ isym, boundary_condition
 
 integer :: nsteps
 
-integer :: J, K, L
-
 !*
 !*************************************************************
 !  initialize the local variable
 nsteps = 0
 
 ! copy the density array into a workspace copy
-do L = 1, numphi
-   do K = 1, numz
-      do J = 1, numr
-         rhop(J,K,L) = rho(J,K,L)
-      enddo
-   enddo
-enddo
+rhop = rho
 ! need to zero out sections of rhop to avoid problems
 ! with material piling up in the boundary zones for
 ! the dirichlet boundary conditions
-
-! Top of the grid
-do L = 1, numphi
-   do K = zupb, zupb+1
-      do J = 1, numr
-         rhop(J,K,L) = 0.0
-      enddo
-   enddo
-enddo
-! outer edge of grid
-do L = 1, numphi
-   do K = 1, numz
-      do J = rupb, rupb+1
-         rhop(J,K,L) = 0.0
-      enddo
-   enddo
-enddo
-! bottom of grid
-if( isym == 1 ) then
-   do L = 1, numphi
-      do K = zlwb-1, zlwb
-         do J = 1, numr
-            rhop(J,K,L) = 0.0
-         enddo
-      enddo
-   enddo
+if( iam_on_top ) then
+   rhop(:,zupb:zupb+1,:) = 0.0
+endif
+if( iam_on_edge ) then
+   rhop(rupb:rupb+1,:,:) = 0.0
+endif
+if( iam_on_bottom .and. (isym == 1) ) then
+   rhop(:,zlwb-1:zlwb,:) = 0.0
 endif
 
 if( tstep > 1 ) then
@@ -89,21 +78,15 @@ if( tstep > 1 ) then
    ! time potential_solver was called.  Perform only
    ! 5 ADI iterations as we are starting from a good
    ! guess for the potential
-   nsteps = 20
-   !nsteps = 10
+   !nsteps = 20
+   nsteps = 10
 else
    ! don't have a guess for the potential but 20 ADI
    ! iterations are sufficient for a cold start to
    ! get an acceptable solution
    !nsteps = 50
    nsteps = 50
-   do L = 1, numphi
-      do K = 1, numz
-         do J = 1, numr
-            potp(J,K,L) = 0.0
-         enddo
-      enddo
-   enddo
+   potp = 0.0
 endif
 
 ! solve for the boundary values of the potential
@@ -116,13 +99,7 @@ call helmadi(nsteps)
 ! if you want to add an external potential in
 ! addition to the self gravity this would be a
 ! good place to do it
-do L = 1, numphi
-   do K = 1, numz
-      do J = 1, numr
-         pot(J,K,L) = potp(J,K,L)
-      enddo
-   enddo
-enddo
+pot = potp
 
 return
 end subroutine potential_solver

@@ -33,7 +33,7 @@ include 'pot.h'
 !*
 !*  Subroutine Arguments
 
-real, dimension(numr,numz,numz,mmax) :: smz
+real, dimension(numr_dd,numz_dd,numz,mmax) :: smz
 
 !* 
 !*
@@ -41,8 +41,8 @@ real, dimension(numr,numz,numz,mmax) :: smz
 !*
 !* Global Variables
 
-real, dimension(numr) :: rhf, r, rhfinv, rinv
-real, dimension(numz) :: zhf
+real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
+real, dimension(numz_dd) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 
@@ -80,22 +80,22 @@ real :: elle, ellf, gammln
 integer :: jl ! radial index for local portion of pe's data
 integer :: kl ! vertical index for local portion of pe's data
 integer :: kg ! global radial index
-integer :: M  ! azimuthal mode number      
+integer :: m  ! azimuthal mode number      
 integer :: ir ! hypergeometric function evaluation index
  
 !*
 !*
 !****************************************************************
 !  initialize the local variables
-do M = 1, mmax
-   qp(M)    = 0.0
-   qm(M)    = 0.0
-   nu(M)    = 0.0
-   coefh(M) = 0.0
+do m = 1, mmax
+   qp(m)    = 0.0
+   qm(m)    = 0.0
+   nu(m)    = 0.0
+   coefh(m) = 0.0
 enddo
-do M = 1, mmax
+do m = 1, mmax
    do jl = 1, hypr_upr_bnd+1
-      dcoefh(jl,M) = 0.0
+      dcoefh(jl,m) = 0.0
    enddo
 enddo
 mm = 0.0
@@ -125,29 +125,29 @@ gammln_half = gammln(0.5)
 
 index = 3.0
 if( isym == 3 ) then
-   do M = 3, mmax
-      nu(M) = 2.0*index - 4.5
+   do m = 3, mmax
+      nu(m) = 2.0*index - 4.5
       index = index + 1.0
    enddo
 else
-   do M = 3, mmax
-      nu(M) = index - 2.5
+   do m = 3, mmax
+      nu(m) = index - 2.5
       index = index + 1.0
    enddo
 endif
 
 index = 1.0   
 if( isym == 3 ) then
-   do M = 1, mmax
+   do m = 1, mmax
       mm = 2.0*(index - 1.0)
       aa = 0.5*(mm + 1.5)
       bb = 0.5*(mm + 0.5)
       cc = mm + 1.0
-      coefh(M) = gammln_half + gammln(mm+0.5) -               &
+      coefh(m) = gammln_half + gammln(mm+0.5) -               &
                  gammln(aa) - gammln(bb)
       ir_index = 0.0
       do ir = 0, hypr_upr_bnd
-         dcoefh(ir+1,M) = gammln(aa+ir_index) +               &
+         dcoefh(ir+1,m) = gammln(aa+ir_index) +               &
                           gammln(bb+ir_index) -               &
                           gammln(cc+ir_index) -               &
                           gammln(ir_index+1.0)
@@ -156,16 +156,16 @@ if( isym == 3 ) then
       index = index + 1.0
    enddo
 else
-   do M = 1, mmax
+   do m = 1, mmax
       mm = index - 1.0
       aa = 0.5*(mm + 1.5)
       bb = 0.5*(mm + 0.5)
       cc = mm + 1.0
-      coefh(M) = gammln_half + gammln(mm+0.5) -                &
+      coefh(m) = gammln_half + gammln(mm+0.5) -                &
                  gammln(aa) - gammln(bb)
       ir_index = 0.0
       do ir = 0, hypr_upr_bnd
-         dcoefh(ir+1,M) = gammln(aa+ir_index) +                &
+         dcoefh(ir+1,m) = gammln(aa+ir_index) +                &
                           gammln(bb+ir_index) -                &
                           gammln(cc+ir_index) -                &
                           gammln(ir_index+1.0)
@@ -193,28 +193,28 @@ if( isym == 1 ) then
                Emum = elle(mum)
                qm(1) = Kmum * mum
                qm(2) = xm * mum * Kmum - lam * Emum
-               do M = 3, mmax
-                  qm(M) = (2.0*nu(M)+1.0)/(nu(M)+1.0)*xm*qm(M-1) -    &
-                          nu(M)/(nu(M)+1.0)*qm(M-2)
+               do m = 3, mmax
+                  qm(m) = (2.0*nu(m)+1.0)/(nu(m)+1.0)*xm*qm(m-1) -    &
+                          nu(m)/(nu(m)+1.0)*qm(m-2)
                enddo
             else
                index = 0.0
-               do M = 1, mmax
-                  coefh_m = exp( coefh(M) - (index + 0.5)*            &
+               do m = 1, mmax
+                  coefh_m = exp( coefh(m) - (index + 0.5)*            &
                                 alog(2.0*xm) )
                   sum = 0.0 
                   ir_index = 0.0
                   do ir = 0, hypr_upr_bnd
-                     sum = sum + exp( dcoefh(ir+1,M) -                &
+                     sum = sum + exp( dcoefh(ir+1,m) -                &
                                   2.0*ir_index*alog(xm) )
                      ir_index = ir_index + 1.0
                   enddo
-                  qm(M) = coefh_m * sum
+                  qm(m) = coefh_m * sum
                   index = index + 1.0
                enddo
             endif
-            do M = 1, mmax
-               smz(jl,kl,kg,M) = coef * qm(M)
+            do m = 1, mmax
+               smz(jl,kl,kg,m) = coef * qm(m)
             enddo
          enddo
       enddo
@@ -242,23 +242,23 @@ else if( isym == 2) then
               Emup = elle(mup)
               qp(1) = Kmup*mup
               qp(2) = xp*mup*Kmup - lap*Emup
-              do M = 3, mmax
-                 qp(M) = (2.0*nu(M)+1.0)/(nu(M)+1.0)*xp*qp(M-1) -    &
-                         nu(M)/(nu(M)+1.0)*qp(M-2)
+              do m = 3, mmax
+                 qp(m) = (2.0*nu(m)+1.0)/(nu(m)+1.0)*xp*qp(m-1) -    &
+                         nu(m)/(nu(m)+1.0)*qp(m-2)
               enddo
            else
               index = 0.0
-              do M = 1, mmax
-                 coefh_m = exp(coefh(M) - (index+0.5)*               &
+              do m = 1, mmax
+                 coefh_m = exp(coefh(m) - (index+0.5)*               &
                              alog(2.0*xp))
                  sum = 0.0 
                  ir_index = 0.0
                  do ir = 0, hypr_upr_bnd
-                    sum = sum + exp(dcoefh(ir+1,M) -                 &
+                    sum = sum + exp(dcoefh(ir+1,m) -                 &
                                  2.0*ir_index*alog(xp))
                     ir_index = ir_index + 1.0
                  enddo
-                 qp(M) = coefh_m * sum
+                 qp(m) = coefh_m * sum
                  index = index + 1.0
               enddo
            endif
@@ -269,28 +269,28 @@ else if( isym == 2) then
               Emum = elle(mum)
               qm(1) = Kmum*mum
               qm(2) = xm*mum*Kmum - lam*Emum
-              do M = 3, mmax
-                 qm(M) = (2.0*nu(M)+1.0)/(nu(M)+1.0)*xm*qm(M-1) -    &
-                         nu(M)/(nu(M)+1.0)*qm(M-2)
+              do m = 3, mmax
+                 qm(m) = (2.0*nu(m)+1.0)/(nu(m)+1.0)*xm*qm(m-1) -    &
+                         nu(m)/(nu(m)+1.0)*qm(m-2)
               enddo
            else
               index = 0.0
-              do M = 1, mmax
-                 coefh_m = exp(coefh(M) - (index+0.5)*               &
+              do m = 1, mmax
+                 coefh_m = exp(coefh(m) - (index+0.5)*               &
                              alog(2.0*xm))
                  ir_index = 0.0
                  sum = 0.0
                  do ir = 0, hypr_upr_bnd
-                    sum = sum + exp(dcoefh(ir+1,M) -                 &
+                    sum = sum + exp(dcoefh(ir+1,m) -                 &
                                  2.0*ir_index*alog(xm))
                     ir_index = ir_index + 1.0
                  enddo
-                 qm(M) = coefh_m * sum
+                 qm(m) = coefh_m * sum
                  index = index + 1.0
               enddo
            endif
-           do M = 1, mmax
-              smz(jl,kl,kg,M) = coef*(qp(M)+qm(M))
+           do m = 1, mmax
+              smz(jl,kl,kg,m) = coef*(qp(m)+qm(m))
            enddo
         enddo
      enddo
@@ -319,29 +319,29 @@ else if( isym == 3 ) then
                qp(1) = Kmup*mup
                qp(2) = (four_thirds*xp*xp-one_third)*mup*Kmup -              &
                        four_thirds*xp*lap*Emup
-               do M = 3, mmax
-                  qp(M) = qp(M-1)*((2.0*nu(M)+3.0)*(2.0*nu(M)+1.0)*xp*xp/    &
-                          ((nu(M)+2.0)*(nu(M)+1.0)) -                        &
-                          (2.0*nu(M)+3.0)*nu(M)*nu(M)/                       &
-                          ((2.0*nu(M)-1.0)*(nu(M)+2.0)*(nu(M)+1.0)) -        &
-                          (nu(M)+1.0)/(nu(M)+2.0)) -                         &
-                          qp(M-2)*(2.0*nu(M)+3.0)*(nu(M)-1.0)*nu(M)/         &
-                          ((2.0*nu(M)-1.0)*(nu(M)+2.0)*(nu(M)+1.0))
+               do m = 3, mmax
+                  qp(m) = qp(m-1)*((2.0*nu(m)+3.0)*(2.0*nu(m)+1.0)*xp*xp/    &
+                          ((nu(m)+2.0)*(nu(m)+1.0)) -                        &
+                          (2.0*nu(m)+3.0)*nu(m)*nu(m)/                       &
+                          ((2.0*nu(m)-1.0)*(nu(m)+2.0)*(nu(m)+1.0)) -        &
+                          (nu(m)+1.0)/(nu(m)+2.0)) -                         &
+                          qp(m-2)*(2.0*nu(m)+3.0)*(nu(m)-1.0)*nu(m)/         &
+                          ((2.0*nu(m)-1.0)*(nu(m)+2.0)*(nu(m)+1.0))
                enddo
             else
                index = 1.0
-               do M = 1, mmax
+               do m = 1, mmax
                   mm = 2.0*(index-1.0)
-                  coefh_m = exp(coefh(M) - (mm+0.5)*         &
+                  coefh_m = exp(coefh(m) - (mm+0.5)*         &
                               alog(2.0*xp))
                   sum = 0.0
                   ir_index = 0.0
                   do ir = 0, hypr_upr_bnd
-                     sum = sum + exp(dcoefh(ir+1,M) -        &
+                     sum = sum + exp(dcoefh(ir+1,m) -        &
                                   2.0*ir_index*alog(xp))
                      ir_index = ir_index + 1.0
                   enddo
-                  qp(M) = coefh_m * sum
+                  qp(m) = coefh_m * sum
                   index = index + 1.0
                enddo
             endif
@@ -353,34 +353,34 @@ else if( isym == 3 ) then
                qm(1) = Kmum*mum
                qm(2) = (four_thirds*xm*xm-one_third)*mum*Kmum -               &
                        four_thirds*xm*lam*Emum
-               do M = 3, mmax
-                  qm(M) = qm(M-1)*((2.0*nu(M)+3.0)*(2.0*nu(M)+1.0)*xm*xm/     &
-                          ((nu(M)+2.0)*(nu(M)+1.0)) -                         &
-                          (2.0*nu(M)+3.0)*nu(M)*nu(M)/                        &
-                          ((2.0*nu(M)-1.0)*(nu(M)+2.0)*(nu(M)+1.0)) -         &
-                          (nu(M)+1.0)/(nu(M)+2.0)) -                          &
-                          qm(M-2)*(2.0*nu(M)+3.0)*(nu(M)-1.0)*nu(M)/          &
-                          ((2.0*nu(M)-1.0)*(nu(M)+2.0)*(nu(M)+1.0))
+               do m = 3, mmax
+                  qm(m) = qm(m-1)*((2.0*nu(m)+3.0)*(2.0*nu(m)+1.0)*xm*xm/     &
+                          ((nu(m)+2.0)*(nu(m)+1.0)) -                         &
+                          (2.0*nu(m)+3.0)*nu(m)*nu(m)/                        &
+                          ((2.0*nu(m)-1.0)*(nu(m)+2.0)*(nu(m)+1.0)) -         &
+                          (nu(m)+1.0)/(nu(m)+2.0)) -                          &
+                          qm(m-2)*(2.0*nu(m)+3.0)*(nu(m)-1.0)*nu(m)/          &
+                          ((2.0*nu(m)-1.0)*(nu(m)+2.0)*(nu(m)+1.0))
                enddo
             else
                index = 1.0
-               do M = 1, mmax
+               do m = 1, mmax
                   mm = 2.0*(index-1.0)
-                  coefh_m = exp(coefh(M) - (mm+0.5)*          &
+                  coefh_m = exp(coefh(m) - (mm+0.5)*          &
                               alog(2.0*xm))
                   sum = 0.0
                   ir_index = 0.0
                   do ir = 0, hypr_upr_bnd
-                     sum = sum + exp(dcoefh(ir+1,M) -         &
+                     sum = sum + exp(dcoefh(ir+1,m) -         &
                                   2.0*ir_index*alog(xm))
                      ir_index = ir_index + 1.0
                   enddo
-                  qm(M) = coefh_m * sum
+                  qm(m) = coefh_m * sum
                   index = index + 1.0
                enddo
             endif
-            do M = 1, mmax
-               smz(jl,kl,kg,M) = coef * (qp(M) + qm(M))
+            do m = 1, mmax
+               smz(jl,kl,kg,m) = coef * (qp(m) + qm(m))
             enddo
          enddo
       enddo

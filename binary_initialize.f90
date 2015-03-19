@@ -7,10 +7,17 @@ include 'runscf.h'
 !  subroutine arguments
 !
 
-real, intent(in) :: rhom1, rhom2
-integer, intent(in) :: ra, rb, rc
-integer, intent(in) :: phia, phib, phic
-integer, intent(in) :: za, zb, zc
+real, intent(in) :: rhom1
+real, intent(in) :: rhom2
+integer, intent(in) :: ra
+integer, intent(in) :: rb
+integer, intent(in) :: rc
+integer, intent(in) :: phia
+integer, intent(in) :: phib
+integer, intent(in) :: phic
+integer, intent(in) :: za
+integer, intent(in) :: zb
+integer, intent(in) :: zc
 integer, intent(in) :: initial_model_type
 
 !
@@ -24,11 +31,11 @@ integer, intent(in) :: initial_model_type
 !  global variables
 !
 
-real, dimension(numr,numz,numphi) :: pot, rho
+real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr) :: rhf, r, rhfinv, rinv
-real, dimension(numz) :: zhf
+real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
+real, dimension(numz_dd) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 
@@ -39,6 +46,22 @@ common /global_grid/ rhf_g,r_g,rhfinv_g,rinv_g,zhf_g
 real, dimension(numphi) :: cosine, sine
 common /trig/ cosine, sine
 
+logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
+           iam_on_edge, iam_root
+integer :: column_num, row_num
+integer :: iam, down_neighbor, up_neighbor,                  &
+           in_neighbor, out_neighbor, root,                  &
+           REAL_SIZE, INT_SIZE, numprocs
+integer, dimension(numr_procs,numz_procs) :: pe_grid
+common /processor_grid/ iam, numprocs, iam_on_top,           &
+                        iam_on_bottom, iam_on_axis,          &
+                        iam_on_edge, down_neighbor,          &
+                        up_neighbor, in_neighbor,            &
+                        out_neighbor, root, column_num,      &
+                        row_num, pe_grid, iam_root,          &
+                        REAL_SIZE, INT_SIZE
+
+
 !
 !****************************************************************************************
 !
@@ -46,6 +69,8 @@ common /trig/ cosine, sine
 !
 
 integer :: rindex_center_1, rindex_center_2
+
+integer :: phi1, phi2, phi3, phi4
 
 real :: sigsq1, sigsq2
 
@@ -55,11 +80,15 @@ real :: k1, k2
 
 real :: dsq, d, pi
 
-integer :: I, J, K, L
+integer :: I, J, K
 
 !
 !****************************************************************************************
 
+phi1 = int(numphi / 4.0) - 1
+phi2 = int(numphi / 4.0) + 1
+phi3 = int(3.0 * numphi / 4.0) - 1
+phi4 = int(3.0 * numphi / 4.0) + 1
 
 pi = acos(-1.0)
 
@@ -252,18 +281,15 @@ select case(initial_model_type)
 end select
 
 ! impose equatorial boundary condition
-do L = 1, numphi
-   do J = 1, numr
-      rho(J,zlwb-1,L) = rho(J,zlwb,L)
-   enddo
-enddo
+if ( iam_on_bottom ) then
+   rho(:,zlwb-1,:) = rho(:,zlwb,:)
+endif
 
 ! impose the axial boundary condition
-do L = 1, numphi_by_two
-   do K = 1, numz
-      rho(rlwb-1,K,L)               = rho(rlwb,K,L+numphi_by_two)
-      rho(rlwb-1,K,L+numphi_by_two) = rho(rlwb,K,L)
-   enddo
-enddo
+if ( iam_on_axis ) then
+   rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
+endif
+
+!call comm(rho)
 
 end subroutine binary_initialize

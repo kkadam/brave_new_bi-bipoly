@@ -1,18 +1,12 @@
 #!/bin/bash
 #PBS -q single
 #PBS -A loni_lrn01
-#PBS -l nodes=1:ppn=1
-#PBS -l walltime=24:00:00
+#PBS -l nodes=1:ppn=6
+#PBS -l walltime=05:00:00
 #PBS -o pbs_out
 #PBS -j oe
-#PBS -N scf_hd
+#PBS -N m9
 
 cd $PBS_O_WORKDIR
-/work/kkadam/scf_runs/m6/scf
-<<<<<<< HEAD
+/work/kkadam/scf_runs/m9/scf
 
-
-
-
-=======
->>>>>>> e247e4e26207944196bedf4449bfc15b0d91d3f1

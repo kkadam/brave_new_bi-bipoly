@@ -1,6 +1,6 @@
-       integer, parameter :: numr = 258
-       integer, parameter :: numz = 258
-       integer, parameter :: numphi = 512
+    integer, parameter :: numr = 258
+    integer, parameter :: numz = 258
+    integer, parameter :: numphi = 512
 
        real, parameter :: n1 = 1.5
        real, parameter :: nc1 = 3.0

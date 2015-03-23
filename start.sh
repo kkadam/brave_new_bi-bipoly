@@ -1,8 +1,8 @@
 #!/bin/bash
 ### Set important parameters ###
-run=m8
-readme="q0.5 benchmark at quadruple resolution!"
-resolution=SHR  
+run=m9
+readme="attempt at bibi with q~0.5"
+resolution=HR  
 #Options for resolution are LR, HR, SHR
 work_dir=/work/kkadam/scf_runs
 greens=".true."
@@ -23,6 +23,8 @@ then
    sed -i "3i\    integer, parameter :: numphi = 256" runscf.h
    tm=tmr_array_130x130x256
    sm=smz_array_130x130x256
+   queue=single
+   ppn=1
 
 elif [ $resolution == "HR" ] 
 then
@@ -32,6 +34,8 @@ then
    sed -i "3i\    integer, parameter :: numphi = 512" runscf.h
    tm=tmr_array_258x258x512
    sm=smz_array_258x258x512
+   queue=single
+   ppn=6
 
 elif [ $resolution == "SHR" ] 
 then
@@ -41,6 +45,9 @@ then
    sed -i "3i\    integer, parameter :: numphi = 512" runscf.h
    tm=tmr_array_514x514x1024
    sm=smz_array_514x514x1024
+   queue=bigmem
+   ppn=12
+
 else
    echo "================================================="
    echo "Wrong resolution! Allowed values are LR, HR, SHR."
@@ -80,6 +87,11 @@ cp init $run
 cp runscf.h $run
 echo $readme > $run/readme
 
+
+sed -i -e '2d' bs
+sed -i "2i\#PBS -q $queue" bs
+sed -i -e '4d' bs
+sed -i "4i\#PBS -l nodes=1:ppn=$ppn" bs
 sed -i -e '8d' bs
 sed -i "8i\#PBS -N $run" bs
 sed -i -e '11d' bs

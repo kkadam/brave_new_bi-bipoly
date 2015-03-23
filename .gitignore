@@ -1,0 +1,11 @@
+# Object files
+*.o
+
+# Parameter files
+runscf.h
+init
+bs
+
+# Binary
+scf
+

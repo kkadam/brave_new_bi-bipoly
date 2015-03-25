@@ -1,8 +1,8 @@
 #!/bin/bash
 ### Set important parameters ###
-run=m9
-readme="attempt at bibi with q~0.5"
-resolution=HR  
+run=m13
+readme="First SHR!!"
+resolution=SHR  
 #Options for resolution are LR, HR, SHR
 work_dir=/work/kkadam/scf_runs
 greens=".true."
@@ -40,9 +40,9 @@ then
 elif [ $resolution == "SHR" ] 
 then
    sed -i -e '1,3d' runscf.h
-   sed -i "1i\    integer, parameter :: numr = 258" runscf.h
-   sed -i "2i\    integer, parameter :: numz = 258" runscf.h
-   sed -i "3i\    integer, parameter :: numphi = 512" runscf.h
+   sed -i "1i\    integer, parameter :: numr = 514" runscf.h
+   sed -i "2i\    integer, parameter :: numz = 514" runscf.h
+   sed -i "3i\    integer, parameter :: numphi = 1024" runscf.h
    tm=tmr_array_514x514x1024
    sm=smz_array_514x514x1024
    queue=bigmem

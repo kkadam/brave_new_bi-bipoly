@@ -97,11 +97,16 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   integer :: index
   character(len=50) :: model_template
   character(len=56) :: model_file
-integer :: phi1, phi2, phi3, phi4
+  integer :: phi1, phi2, phi3, phi4
+  integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
+  integer, dimension(1) :: center1, center2
+  real :: densmin  
 !
 !*****************************************************************************************
 
   model_template = 'model_details_'
+
+densmin = 1e-10
 
 phi1 = int(numphi / 4.0) - 1
 phi2 = int(numphi /  4.0) + 1
@@ -112,6 +117,15 @@ phi4 = int(3.0 * numphi / 4.0) + 1
   gammae2 = 1.0 + 1.0/n2
   gammac1 = 1.0 + 1.0/nc1
   gammac2 = 1.0 + 1.0/nc2
+
+diac1=0
+diae1=0
+diac2=0
+diae2=0
+ac1=0
+ae1=0
+ac2=0
+ae2=0
 
   primary = 1
   if ( mass2(qfinal) > mass1(qfinal) ) then
@@ -520,6 +534,60 @@ do I = rlwb, rupb
 enddo
 
 
+!Find the diameter of the core and envelope in number of cells
+  do i = rlwb, rupb
+     if (rho(i,2,1).gt.(2*densmin)) then     
+        diae1=diae1+1  
+     endif
+     if (rho(i,2,1).gt.(rho_1d)) then
+        diac1=diac1+1
+     endif
+  enddo
+
+  do i = rlwb, rupb
+     if (rho(i,2,numphi/2).gt.(2*densmin)) then
+        diae2=diae2+1
+     endif
+     if (rho(i,2,numphi/2).gt.(rho_2e)) then
+        diac2=diac2+1
+     endif
+  enddo
+
+!Find angular resolution (phi) of the core and the envelope 
+   center1=maxloc(rho(:,2,1))
+   center2=maxloc(rho(:,2,numphi/2)) 
+   print*, "center1 = ", center1
+   print*, "center2 = ", center2
+
+  do i = 1, phi1
+     if (rho(center1(1),2,i).gt.(2*densmin)) then
+        ae1=ae1+1
+     endif
+     if (rho(center1(1),2,i).gt.(rho_1d)) then
+        ac1=ac1+1
+     endif
+  enddo
+
+  do i = phi4, numphi
+     if (rho(center1(1),2,i).gt.(2*densmin)) then
+        ae1=ae1+1
+     endif
+     if (rho(center1(1),2,i).gt.(rho_1d)) then
+        ac1=ac1+1
+     endif
+  enddo
+
+  do i = phi2, phi3
+     if (rho(center2(1),2,i).gt.(2*densmin)) then
+        ae2=ae2+1
+     endif
+     if (rho(center2(1),2,i).gt.(rho_2e)) then
+        ac2=ac2+1
+     endif
+  enddo
+
+
+!Write the output file
 write(model_file,'(a,i6)') trim(model_template), model_number
 open(unit=11, file=trim(model_file),form='formatted',status='unknown')
 
@@ -538,6 +606,10 @@ write(11,*) 'Polytropic Constant Core: ',kappac1
 write(11,*) 'Polytropic Constant Envelope: ',kappae1 
 write(11,*) 'Integration constant for core: ', cc1(qfinal)
 write(11,*) 'Integration constant for envelope: ', c1(qfinal)
+write(11,*) 'Core diameter (in number of cells):', diac1
+write(11,*) 'Star diameter (in number of cells):', diae1
+write(11,*) 'Core angular resolution (in number of cells):', ac1
+write(11,*) 'Star angular resolution (in number of cells):', ae1
 write(11,*) 'Virial Pressure: ', s1
 write(11,*) 'Potential Energy: ', w1
 write(11,*) 'Kinetic Energy: ', t1
@@ -574,6 +646,10 @@ write(11,*) 'Polytropic Constant Core: ',kappac2
 write(11,*) 'Polytropic Constant Envelope: ',kappae2 
 write(11,*) 'Integration constant for core: ', cc2(qfinal)
 write(11,*) 'Integration constant for envelope: ', c2(qfinal)
+write(11,*) 'Core diameter (in number of cells):', diac2
+write(11,*) 'Envelope diameter (in number of cells):', diae2
+write(11,*) 'Core angular resolution (in number of cells):', ac2
+write(11,*) 'Star angular resolution (in number of cells):', ae2
 write(11,*) 'Virial Pressure: ', s2
 write(11,*) 'Potential Energy: ', w2
 write(11,*) 'Kinetic Energy: ', t2

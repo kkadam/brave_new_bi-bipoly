@@ -701,7 +701,7 @@ rho2i = (rho_2e+rho_c2e)/2.0
 
 open(unit=13,file="autoread.dat")
 write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, " ",&
-     omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho1i, " ", rho2i
+     omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho_1d, " ", rho_2e
 close(13)
 
 end subroutine binary_output

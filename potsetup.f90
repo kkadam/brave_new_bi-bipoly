@@ -150,8 +150,8 @@ if ( have_green_funcs ) then
    open(unit=21,file='smz_array',form='unformatted',status='old')
    read(20) tmr
    read(21) smz
-   close(20)
-   close(21)
+   close(20,status='delete')
+   close(21,status='delete')
 else
    call tm(tmr)
    call sm(smz)

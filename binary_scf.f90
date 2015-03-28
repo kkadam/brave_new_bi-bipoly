@@ -125,7 +125,7 @@ integer :: ierror
   integer :: rmax
    real :: gammac1, gammac2, gammae1,gammae2
    real :: kappac1,kappac2, kappae1,kappae2
-
+   real :: rho_cc1, rho_cc2
 !integer, dimension(MPI_STATUS_SIZE) :: istatus 
 
 !
@@ -213,6 +213,8 @@ volume_factor = 2.0 * dr * dz * dphi
   hem2 = 0.0
   c1 = 0.0
   c2 = 0.0
+  rho_cc1=0.0
+  rho_cc2=0.0
 
 virial_error = 1.0
 
@@ -412,6 +414,9 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                    else   
                       rho(k,j,i) = 0.0	   
                    endif
+                   if(rho(k,j,i).gt.rho_cc1) then
+                      rho_cc1 = rho(k,j,i)
+                   endif
                 enddo
              enddo
           enddo
@@ -427,6 +432,9 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                       endif
                    else   
                       rho(k,j,i) = 0.0	   
+                   endif
+                   if(rho(k,j,i).gt.rho_cc2) then
+                      rho_cc2 = rho(k,j,i)
                    endif
                 enddo
              enddo
@@ -444,10 +452,38 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                    else   
                       rho(k,j,i) = 0.0	   
                    endif
+                   if(rho(k,j,i).gt.rho_cc1) then
+                      rho_cc1 = rho(k,j,i)
+                   endif
                 enddo
              enddo
           enddo
 
+   ! normalize wrt the central densities of the stars
+          do i = 1,phi1+1
+             do j = 2,numz
+                do k = 2,numr
+                   rho(k,j,i) = rho(k,j,i)/rho_cc1*rhom1
+                enddo
+             enddo
+          enddo
+
+          do i = phi2,phi3+1
+             do j = 2,numz
+                do k = 2,numr
+                   rho(k,j,i) = rho(k,j,i)/rho_cc2*rhom2
+                enddo
+             enddo
+          enddo
+
+
+          do i = phi4,numphi
+             do j = 2,numz
+                do k = 2,numr
+                   rho(k,j,i) = rho(k,j,i)/rho_cc1*rhom1
+                enddo
+             enddo
+          enddo
 
    ! zero out the density field between the axis and the inner boundary points
    do K = philwb, phi1
@@ -574,8 +610,12 @@ print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
  print*, "kappac2= ", kappac2,  "kappae2", kappae2
 
    if ( iam_root ) then
-      write(13,*) Q, mass1(Q), mass2(Q), xavg1, xavg2, com, omsq(Q), c1(Q), c2(Q), &
-                  hm1(Q), hm2(Q), cnvgom, cnvgc1, cnvgc2, cnvgh1, cnvgh2, virial_error1, &
+      write(13,*) Q, mass1(Q), mass2(Q), &
+                  xavg1, xavg2, com,     &
+                  omsq(Q), c1(Q), c2(Q), &
+                  hm1(Q), hm2(Q), cnvgom,&
+                  cnvgc1, cnvgc2, cnvgh1,&
+                  cnvgh2, virial_error1, &
                   virial_error2, virial_error
    endif
 

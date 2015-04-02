@@ -424,14 +424,14 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
              do j = 2,numz
                 do k = 2,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_2e) then	   
+                      if (rho(k,j,i).gt.rho_2e) then
                          rho(k,j,i) = rhom2*(h(k,j,i)/hm2(q))**nc2
                       else
-                      	 rho(k,j,i) = rhom2*norm2*(h(k,j,i)/h_e2e)**n2
+                         rho(k,j,i) = rhom2*norm2*(h(k,j,i)/h_e2e)**n2
                          !rho(k,j,i) = rhom2*norm2*(h(k,j,i)/hm2(q))**n2
                       endif
                    else   
-                      rho(k,j,i) = 0.0	   
+                      rho(k,j,i) = 0.0
                    endif
                    if(rho(k,j,i).gt.rho_cc2) then
                       rho_cc2 = rho(k,j,i)
@@ -443,14 +443,14 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
              do j = 2,numz
                 do k = 2,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_1d) then	   
+                      if (rho(k,j,i).gt.rho_1d) then
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
                       else
-                      	 rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
+                         rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
                          !rho(k,j,i) = rhom1*norm1*(h(k,j,i)/hm1(q))**n1
                       endif
                    else   
-                      rho(k,j,i) = 0.0	   
+                      rho(k,j,i) = 0.0
                    endif
                    if(rho(k,j,i).gt.rho_cc1) then
                       rho_cc1 = rho(k,j,i)
@@ -610,13 +610,15 @@ print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
  print*, "kappac2= ", kappac2,  "kappae2", kappae2
 
    if ( iam_root ) then
-      write(13,*) Q, mass1(Q), mass2(Q), &
-                  xavg1, xavg2, com,     &
-                  omsq(Q), c1(Q), c2(Q), &
-                  hm1(Q), hm2(Q), cnvgom,&
-                  cnvgc1, cnvgc2, cnvgh1,&
-                  cnvgh2, virial_error1, &
-                  virial_error2, virial_error
+      write(13,*) "=========================================",         &
+                  "iteration = ", Q, "m1=", mass1(Q), "m2=", mass2(Q), &
+                  "x1=",xavg1, "x2=",xavg2,"com=", com,                &
+                  "omsq=",omsq(Q), "c1=",c1(Q), "c2=",c2(Q),           &
+                  "hm1=",hm1(Q),"hm2=", hm2(Q), "cnvgom=",cnvgom      ,&
+                  "cnvgc1=",cnvgc1, "cnvgc2=",cnvgc2, "cnvgh1=",cnvgh1,&
+                  "cnvgh2=",cnvgh2, "virial1=",virial_error1,          &
+                  "virial2=",virial_error2, "virial=",virial_error,    &
+                  "rho_2e", rho_2e, "rho_c2e", rho_c2e
    endif
 
    if ( cnvgom < eps .and. cnvgc1 < eps .and. cnvgc2 < eps .and. &
@@ -702,14 +704,14 @@ if ( iam_root ) then
 endif
 
   call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
-	            qfinal, initial_model_type, model_number, ra, za, phia,  &
-	            rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,  &
-	            rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation, &
-	            com, volume_factor, eps, hem1, hem2, rhoem1, rhoem2,     &
-	            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e)
+            qfinal, initial_model_type, model_number, ra, za, phia,          &
+            rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,          &
+            rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,              &
+            com, volume_factor, eps, hem1, hem2, rhoem1, rhoem2,             &
+            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e)
 
 
-  call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,     &
+  call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,  &
                    initial_model_type, model_number, ra, za, phia, rb, zb,   &
                    phib, rc, zc, phic, rhm1, rhm2, 1.5, rhom1, rhom2, xavg1, &
                    xavg2, separation, com, volume_factor, eps)

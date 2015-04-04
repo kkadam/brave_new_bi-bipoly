@@ -59,7 +59,7 @@ close(50)
   open(unit=10,file="star2")
     do j=1,numz
       do i=1,numr
-        write(10,*) i,j,data_array(i,j,numphi/2)
+        write(10,*) i,j,data_array(i,j,numphi/2+1)
       enddo
       write(10,*)
     enddo

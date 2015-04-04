@@ -125,7 +125,9 @@ integer :: ierror
   integer :: rmax
    real :: gammac1, gammac2, gammae1,gammae2
    real :: kappac1,kappac2, kappae1,kappae2
-   real :: rho_cc1, rho_cc2
+   real :: rho_cc1, rho_cc2!, rhoth1, rhoth2
+  character*20 char1,char2,char3,char4,char5,char6,char7 
+ real :: wtf1,wtf2
 !integer, dimension(MPI_STATUS_SIZE) :: istatus 
 
 !
@@ -155,6 +157,7 @@ phi4 = int(3.0 * numphi / 4.0) + 1
   zc = 2
   zd = 2
   ze = 2
+
 
 i_have_ra = .false.
 ra_local_index = 0
@@ -252,6 +255,12 @@ if ( iam_root ) then
    write(13,*) iam, 1, mass1(1), mass2(1), xavg1, xavg2, com, separation
 endif
 
+if ( iam_root ) then
+   open(unit=12,file='convergence_log',form='formatted',status='unknown')
+endif
+
+
+
 print*, 'maxit = ', maxit
 
 do Q = 2, maxit-1                                   ! START OF THE ITERATION CYCLE
@@ -278,14 +287,14 @@ print*, "iteration number = ", Q
           pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
           pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
           pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-          pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+1,zd,phid))
-          pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+1,ze,phie))
+          pot_d = pot_it(rd,zd,phid)
+          pot_e = pot_it(re,ze,phie)
           
           psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
           psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
           psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-          psi_d = 0.5*(psi(rd,phid) + psi(rd+1,phid))
-          psi_e = 0.5*(psi(re,phie) + psi(re+1,phie))
+          psi_d = psi(rd,phid)
+          psi_e = psi(re,phie)
          
 !print*, pot_a, pot_b, pot_c, pot_d, pot_e
 !print*, psi_a, psi_b, psi_c, psi_d, psi_e 
@@ -295,15 +304,17 @@ print*, "iteration number = ", Q
           c1(q) = pot_b + omsq(q)*psi_b
           c2(q) = pot_c + omsq(q)*psi_c
        
-          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd+1,zd,phid))
+          rho_1d = rho(rd,zd,phid)
           rho_c1d=rho_1d*muc1/mu1       
+!          rho_c1d=0.5*(rho(rd,zd,phid) + rho(rd+1,zd,phid))
+!          rho_1d=rho_c1d*mu1/muc1 
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
 
 print*, "rho_1d", rho_1d, "rho_c1d", rho_c1d       
 
-          rho_2e = 0.5*(rho(re,ze,phie) + rho(re+1,ze,phie))
+          rho_2e = rho(re,ze,phie)
           rho_c2e=rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
@@ -314,7 +325,8 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
 !print*,  omsq(q) 
 !print*,  "cs",c1(q), c2(q),cc1(q),cc2(q)
 
- 
+!rhoth1=(rho_1d+rho_c1d)/2
+!rhoth2=(rho_2e+rho_c2e)/2 
    ! now compute the new  enthalpy field from the potential and SCF constants
           do i = 1,phi1+1
              do j = 2,numz
@@ -399,7 +411,8 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
 !print*, "h's",hem1(q), hm1(q)
 !print*,"norms",norm1, norm2 
 
-
+rho_cc1=0.0
+rho_cc2=0.0
    ! calculate the new density field from the enthalpy
           do i = 1,phi1+1
              do j = 2,numz
@@ -408,15 +421,18 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                       if (rho(k,j,i).gt.rho_1d) then	   
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
                       else
-                      	 rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
+                         !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
+                         rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
                          !rho(k,j,i) = rhom1*norm1*(h(k,j,i)/hm1(q))**n1
                       endif
                    else   
                       rho(k,j,i) = 0.0	   
                    endif
+
                    if(rho(k,j,i).gt.rho_cc1) then
                       rho_cc1 = rho(k,j,i)
                    endif
+
                 enddo
              enddo
           enddo
@@ -427,15 +443,18 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                       if (rho(k,j,i).gt.rho_2e) then
                          rho(k,j,i) = rhom2*(h(k,j,i)/hm2(q))**nc2
                       else
+                         !rho(k,j,i) = rho_c2e*mu2/muc2*(h(k,j,i)/h_e2e)**n2
                          rho(k,j,i) = rhom2*norm2*(h(k,j,i)/h_e2e)**n2
                          !rho(k,j,i) = rhom2*norm2*(h(k,j,i)/hm2(q))**n2
                       endif
                    else   
                       rho(k,j,i) = 0.0
                    endif
+
                    if(rho(k,j,i).gt.rho_cc2) then
                       rho_cc2 = rho(k,j,i)
                    endif
+
                 enddo
              enddo
           enddo
@@ -446,18 +465,24 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                       if (rho(k,j,i).gt.rho_1d) then
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
                       else
+                         !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
                          rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
                          !rho(k,j,i) = rhom1*norm1*(h(k,j,i)/hm1(q))**n1
                       endif
                    else   
                       rho(k,j,i) = 0.0
                    endif
+
                    if(rho(k,j,i).gt.rho_cc1) then
                       rho_cc1 = rho(k,j,i)
                    endif
+
                 enddo
              enddo
           enddo
+
+print*, "rho_cc1=", rho_cc1,"rhom1=",rhom1
+print*, "rho_cc2=", rho_cc2,"rhom2=",rhom2
 
    ! normalize wrt the central densities of the stars
           do i = 1,phi1+1
@@ -484,6 +509,50 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
                 enddo
              enddo
           enddo
+
+wtf1=0
+wtf2=0
+
+! wtf's happening?
+          do i = 1,phi1+1
+             do j = 2,numz
+                do k = 2,numr
+                   if(rho(k,j,i).gt.wtf1) then
+                      wtf1 = rho(k,j,i)
+                   endif
+                enddo
+             enddo
+          enddo
+
+          do i = phi2,phi3+1
+             do j = 2,numz
+                do k = 2,numr
+                   if(rho(k,j,i).gt.wtf2) then
+                      wtf2 = rho(k,j,i)
+                   endif
+                enddo
+             enddo
+          enddo
+
+
+          do i = phi4,numphi
+             do j = 2,numz
+                do k = 2,numr
+                   if(rho(k,j,i).gt.wtf1) then
+                      wtf1 = rho(k,j,i)
+                   endif
+                enddo
+             enddo
+          enddo
+
+
+!print*, "wtf1=",wtf1, 
+print*, rm1,zm1,phim1
+!print*, "wtf2=",wtf2, 
+print*, rm2,zm2,phim2
+
+
+
 
    ! zero out the density field between the axis and the inner boundary points
    do K = philwb, phi1
@@ -603,22 +672,29 @@ print*,  "h1 = ",  cnvgh1,  "h2 = ",  cnvgh2
   kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
 
 print*, "hm1(q) = ",hm1(q),"hm2(q) = ",hm2(q)
-print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
+!print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
 !print*, "",,"",
 
- print*, "kappac1= ", kappac1,  "kappae1", kappae1
- print*, "kappac2= ", kappac2,  "kappae2", kappae2
+! print*, "kappac1= ", kappac1,  "kappae1", kappae1
+! print*, "kappac2= ", kappac2,  "kappae2", kappae2
+ 
+write (char1, "(F10.7)") cnvgom
+write (char2, "(F10.7)") cnvgc1
+write (char3, "(F10.7)") cnvgc2
+write (char4, "(F10.7)") cnvgh1
+write (char5, "(F10.7)") cnvgh2
+write (char6, "(F10.7)") rho_cc1
+write (char7, "(F10.7)") rho_cc2
+
 
    if ( iam_root ) then
-      write(13,*) "=========================================",         &
-                  "iteration = ", Q, "m1=", mass1(Q), "m2=", mass2(Q), &
-                  "x1=",xavg1, "x2=",xavg2,"com=", com,                &
-                  "omsq=",omsq(Q), "c1=",c1(Q), "c2=",c2(Q),           &
-                  "hm1=",hm1(Q),"hm2=", hm2(Q), "cnvgom=",cnvgom      ,&
-                  "cnvgc1=",cnvgc1, "cnvgc2=",cnvgc2, "cnvgh1=",cnvgh1,&
-                  "cnvgh2=",cnvgh2, "virial1=",virial_error1,          &
-                  "virial2=",virial_error2, "virial=",virial_error,    &
-                  "rho_2e", rho_2e, "rho_c2e", rho_c2e
+      write(13,*) "=================================================" 
+      write(13,*) "iteration = ", Q, "rho_cc1=", rho_cc1, "rho_cc2=", rho_cc2
+      write(13,*) "omsq=",omsq(Q), "c1=",c1(Q), "c2=",c2(Q)
+      write(13,*) "hm1=",hm1(Q),"hm2=", hm2(Q)
+      write(13,*)  "rho_2e", rho_2e, "rho_c2e", rho_c2e
+
+       write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char6),trim(char7)
    endif
 
    if ( cnvgom < eps .and. cnvgc1 < eps .and. cnvgc2 < eps .and. &
@@ -661,14 +737,14 @@ enddo
           pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
           pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
           pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-          pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+1,zd,phid))
-          pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+1,ze,phie))
+          pot_d = pot_it(rd,zd,phid)
+          pot_e = pot_it(re,ze,phie)
           
           psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
           psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
           psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-          psi_d = 0.5*(psi(rd,phid) + psi(rd+1,phid))
-          psi_e = 0.5*(psi(re,phie) + psi(re+1,phie))
+          psi_d = psi(rd,phid)
+          psi_e = psi(re,phie)
           
           omsq(qfinal) = - (pot_a-pot_b)/(psi_a-psi_b) 
 
@@ -676,14 +752,14 @@ enddo
           c1(qfinal) = pot_b + omsq(q)*psi_b
           c2(qfinal) = pot_c + omsq(q)*psi_c
        
-          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd+1,zd,phid))
-          rho_c1d=rho_1d*muc1/mu1       
+          rho_1d = rho(rd,zd,phid)
+          rho_c1d= rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(qfinal) = h_c1d + pot_d+ omsq(q)*psi_d 
         
-          rho_2e = 0.5*(rho(re,ze,phie) + rho(re+1,ze,phie))
-          rho_c2e=rho_2e*muc2/mu2       
+          rho_2e = rho(re,ze,phie)
+          rho_c2e = rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
           cc2(qfinal) = h_c2e + pot_e+ omsq(q)*psi_e
@@ -727,6 +803,7 @@ call cpu_time(time2)
 if ( iam_root ) then
    write(13,*) iam, 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
    close(13)
+   close(12)
 endif
 
 end subroutine binary_scf

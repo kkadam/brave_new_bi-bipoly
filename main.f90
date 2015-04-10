@@ -72,8 +72,6 @@ real :: rhom1, rhom2
 
 real :: frac
 
-real :: eps
-
 real :: pin
 
 logical ::have_green_funcs
@@ -198,7 +196,7 @@ column_num = pe_coord(iam+1,1)
 
  have_green_funcs = .true.
 call setup( have_green_funcs )
-
+ have_green_funcs = .true.
 call cpu_time(time2)
 
 if ( iam_root ) then
@@ -216,8 +214,6 @@ phia = 1
 phib = 1
 phic = numphi / 2 + 1
 
-eps = 1.0e-4
-
 qfinal = 1
 
 do I = first_model, last_model
@@ -228,7 +224,7 @@ do I = first_model, last_model
                             za,  zb, zc, initial_model_type)
 print*, "Finished initialize"
    call binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, &
-                   pin, eps,  qfinal)
+                   pin, qfinal)
 
    write(*,*) 'Finished Model: ', I
    write(*,*) model_number, ra, rb, rc, initial_model_type, rhom1, rhom2, pin, frac

@@ -1,5 +1,4 @@
-subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, pin, eps, &
-                     qfinal)
+subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, pin, qfinal)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -15,7 +14,6 @@ real, intent(in) :: rhom1
 real, intent(in) :: rhom2
 real, intent(in) :: frac
 real, intent(in) :: pin
-real, intent(in) :: eps
 integer, intent(out) :: qfinal
 
 !
@@ -125,11 +123,11 @@ integer :: ierror
   integer :: rmax
    real :: gammac1, gammac2, gammae1,gammae2
    real :: kappac1,kappac2, kappae1,kappae2
-   real :: rho_cc1, rho_cc2!, rhoth1, rhoth2
+   real :: rho_cc1, rho_cc2
   character*20 char1,char2,char3,char4,char5,char6,char7 
- real :: wtf1,wtf2
-!integer, dimension(MPI_STATUS_SIZE) :: istatus 
 
+  integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
+  integer, dimension(1) :: center1, center2
 !
 !**************************************************************************************************
 
@@ -198,7 +196,7 @@ endif
 
 volume_factor = 2.0 * dr * dz * dphi
   rmax = numr - 8
-!gamma = 1.0 + 1.0 / pin
+
 !  Re-Initialize arrays/ variables  
   h = 0.0
   psi = 0.0
@@ -263,7 +261,9 @@ endif
 
 print*, 'maxit = ', maxit
 
-do Q = 2, maxit-1                                   ! START OF THE ITERATION CYCLE
+
+! START OF THE ITERATION CYCLE
+do Q = 2, maxit-1 
 print*, "================"
 print*, "iteration number = ", Q
    ! solve the Poisson equation for the current density field
@@ -306,27 +306,24 @@ print*, "iteration number = ", Q
        
           rho_1d = rho(rd,zd,phid)
           rho_c1d=rho_1d*muc1/mu1       
-!          rho_c1d=0.5*(rho(rd,zd,phid) + rho(rd+1,zd,phid))
-!          rho_1d=rho_c1d*mu1/muc1 
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
 
-print*, "rho_1d", rho_1d, "rho_c1d", rho_c1d       
+!print*, "rho_1d", rho_1d, "rho_c1d", rho_c1d       
 
           rho_2e = rho(re,ze,phie)
           rho_c2e=rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
           cc2(q) = h_c2e + pot_e+ omsq(q)*psi_e       
-print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
+
+!print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
 
 !print*, "rhos", rho_c1d, rho_1d, rho_c2e, rho_2e
 !print*,  omsq(q) 
 !print*,  "cs",c1(q), c2(q),cc1(q),cc2(q)
 
-!rhoth1=(rho_1d+rho_c1d)/2
-!rhoth2=(rho_2e+rho_c2e)/2 
    ! now compute the new  enthalpy field from the potential and SCF constants
           do i = 1,phi1+1
              do j = 2,numz
@@ -407,7 +404,6 @@ print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
           norm1 = mu1/muc1*(h_c1d/hm1(q))**nc1        
           norm2 = mu2/muc2*(h_c2e/hm2(q))**nc2
 
-!print*, "post loop"
 !print*, "h's",hem1(q), hm1(q)
 !print*,"norms",norm1, norm2 
 
@@ -423,7 +419,6 @@ rho_cc2=0.0
                       else
                          !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
                          rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
-                         !rho(k,j,i) = rhom1*norm1*(h(k,j,i)/hm1(q))**n1
                       endif
                    else   
                       rho(k,j,i) = 0.0	   
@@ -445,7 +440,6 @@ rho_cc2=0.0
                       else
                          !rho(k,j,i) = rho_c2e*mu2/muc2*(h(k,j,i)/h_e2e)**n2
                          rho(k,j,i) = rhom2*norm2*(h(k,j,i)/h_e2e)**n2
-                         !rho(k,j,i) = rhom2*norm2*(h(k,j,i)/hm2(q))**n2
                       endif
                    else   
                       rho(k,j,i) = 0.0
@@ -467,7 +461,6 @@ rho_cc2=0.0
                       else
                          !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
                          rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
-                         !rho(k,j,i) = rhom1*norm1*(h(k,j,i)/hm1(q))**n1
                       endif
                    else   
                       rho(k,j,i) = 0.0
@@ -481,8 +474,8 @@ rho_cc2=0.0
              enddo
           enddo
 
-print*, "rho_cc1=", rho_cc1,"rhom1=",rhom1
-print*, "rho_cc2=", rho_cc2,"rhom2=",rhom2
+!print*, "rho_cc1=", rho_cc1,"rhom1=",rhom1
+!print*, "rho_cc2=", rho_cc2,"rhom2=",rhom2
 
    ! normalize wrt the central densities of the stars
           do i = 1,phi1+1
@@ -510,48 +503,8 @@ print*, "rho_cc2=", rho_cc2,"rhom2=",rhom2
              enddo
           enddo
 
-wtf1=0
-wtf2=0
-
-! wtf's happening?
-          do i = 1,phi1+1
-             do j = 2,numz
-                do k = 2,numr
-                   if(rho(k,j,i).gt.wtf1) then
-                      wtf1 = rho(k,j,i)
-                   endif
-                enddo
-             enddo
-          enddo
-
-          do i = phi2,phi3+1
-             do j = 2,numz
-                do k = 2,numr
-                   if(rho(k,j,i).gt.wtf2) then
-                      wtf2 = rho(k,j,i)
-                   endif
-                enddo
-             enddo
-          enddo
-
-
-          do i = phi4,numphi
-             do j = 2,numz
-                do k = 2,numr
-                   if(rho(k,j,i).gt.wtf1) then
-                      wtf1 = rho(k,j,i)
-                   endif
-                enddo
-             enddo
-          enddo
-
-
-!print*, "wtf1=",wtf1, 
-print*, rm1,zm1,phim1
-!print*, "wtf2=",wtf2, 
-print*, rm2,zm2,phim2
-
-
+!print*, rm1,zm1,phim1
+!print*, rm2,zm2,phim2
 
 
    ! zero out the density field between the axis and the inner boundary points
@@ -597,6 +550,21 @@ print*, rm2,zm2,phim2
       rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
    endif
 
+
+   ! has the solution converged?
+   cnvgom = abs( (omsq(Q) - omsq(Q-1)) / omsq(Q) )
+   cnvgc1 = abs( (c1(Q) - c1(Q-1)) / c1(Q) )
+   cnvgc2 = abs( (c2(Q) - c2(Q-1)) / c2(Q) )
+   cnvgh1 = abs( (hm1(Q) - hm1(Q-1)) / hm1(Q) )
+   cnvgh2 = abs( (hm2(Q) - hm2(Q-1)) / hm2(Q) )
+
+   virial_error_prev = virial_error
+   call compute_virial_error(psi, h, sqrt(omsq(Q)), pin, volume_factor, virial_error1, &
+                             virial_error2, virial_error)
+
+! Calculating stuff for printing >>
+
+
    ! calculate the total mass for each star  and core mass for each star
    do K = philwb, phiupb
       do J = zlwb, zupb
@@ -636,6 +604,13 @@ print*, rm2,zm2,phim2
           call binary_sum(temp, ret1, ret2)
           mass_c2(q) = volume_factor*ret2  
 
+!print*, "mass1  = ", mass1(Q)
+!print*, "massc1 = ", mass_c1(Q) 
+!print*, "mass2  = ", mass2(Q)
+!print*, "massc2 = ", mass_c2(Q)
+
+
+
    ! calculate the center of mass for each star
    do K = philwb, phiupb
       do J  = zlwb, zupb
@@ -652,31 +627,76 @@ print*, rm2,zm2,phim2
    com = separation * mass2(Q) / (mass1(Q) + mass2(Q) )
    com = xavg1 - com
  
-   ! has the solution converged?
-   cnvgom = abs( (omsq(Q) - omsq(Q-1)) / omsq(Q) )
-   cnvgc1 = abs( (c1(Q) - c1(Q-1)) / c1(Q) )
-   cnvgc2 = abs( (c2(Q) - c2(Q-1)) / c2(Q) )
-   cnvgh1 = abs( (hm1(Q) - hm1(Q-1)) / hm1(Q) )
-   cnvgh2 = abs( (hm2(Q) - hm2(Q-1)) / hm2(Q) )
-
-   virial_error_prev = virial_error
-   call compute_virial_error(psi, h, sqrt(omsq(Q)), pin, volume_factor, virial_error1, &
-                             virial_error2, virial_error)
-
-print*, "omsq = ", cnvgom
-print*, "c1 = ",  cnvgc1,  "c2 = ",  cnvgc2
-print*,  "h1 = ",  cnvgh1,  "h2 = ",  cnvgh2
+!print*, "omsq = ", cnvgom
+!print*, "c1 = ",  cnvgc1,  "c2 = ",  cnvgc2
+!print*,  "h1 = ",  cnvgh1,  "h2 = ",  cnvgh2
   kappac1 = rhom1*hm1(q)/(nc1+1.0)/rhom1**(gammac1)
   kappac2 = rhom2*hm2(q)/(nc2+1.0)/rhom2**(gammac2)
   kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
   kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
 
-print*, "hm1(q) = ",hm1(q),"hm2(q) = ",hm2(q)
+!print*, "hm1(q) = ",hm1(q),"hm2(q) = ",hm2(q)
 !print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
 !print*, "",,"",
 
 ! print*, "kappac1= ", kappac1,  "kappae1", kappae1
 ! print*, "kappac2= ", kappac2,  "kappae2", kappae2
+
+
+!Find the diameter of the core and envelope in number of cells
+  diac1=0
+  diac2=0
+  do i = rlwb, rupb
+     if (rho(i,2,1).gt.(2*densmin)) then
+        diae1=diae1+1
+     endif
+     if (rho(i,2,1).gt.(rho_1d)) then
+        diac1=diac1+1
+     endif
+  enddo
+
+  do i = rlwb, rupb
+     if (rho(i,2,numphi/2+1).gt.(2*densmin)) then
+        diae2=diae2+1
+     endif
+     if (rho(i,2,numphi/2+1).gt.(rho_2e)) then
+        diac2=diac2+1
+     endif
+  enddo
+
+!Find angular resolution (phi) of the core and the envelope 
+   center1=maxloc(rho(:,2,1))
+   center2=maxloc(rho(:,2,numphi/2+1))
+
+  ac1=0
+  ac2=0
+  do i = 1, phi1
+     if (rho(center1(1),2,i).gt.(2*densmin)) then
+        ae1=ae1+1
+     endif
+     if (rho(center1(1),2,i).gt.(rho_1d)) then
+        ac1=ac1+1
+     endif
+  enddo
+
+  do i = phi4, numphi
+     if (rho(center1(1),2,i).gt.(2*densmin)) then
+        ae1=ae1+1
+     endif
+     if (rho(center1(1),2,i).gt.(rho_1d)) then
+        ac1=ac1+1
+     endif
+  enddo
+
+  do i = phi2, phi3
+     if (rho(center2(1),2,i).gt.(2*densmin)) then
+        ae2=ae2+1
+     endif
+     if (rho(center2(1),2,i).gt.(rho_2e)) then
+        ac2=ac2+1
+     endif
+  enddo
+
  
 write (char1, "(F10.7)") cnvgom
 write (char2, "(F10.7)") cnvgc1
@@ -688,6 +708,12 @@ write (char7, "(F10.7)") rho_cc2
 
 
    if ( iam_root ) then
+       print*, "mass ratio = ", mass1(Q)/mass2(Q),"or",mass2(Q)/mass1(Q)
+       print*, "core mass ratio 1 = ", mass_c1(Q)/mass1(Q)
+       print*, "core mass ratio 2 = ", mass_c2(Q)/mass2(Q)
+       print*, "core1 resolution: ", diac1, ac1 
+       print*, "core2 resolution: ", diac2, ac2
+
       write(13,*) "=================================================" 
       write(13,*) "iteration = ", Q, "rho_cc1=", rho_cc1, "rho_cc2=", rho_cc2
       write(13,*) "omsq=",omsq(Q), "c1=",c1(Q), "c2=",c2(Q)
@@ -696,6 +722,9 @@ write (char7, "(F10.7)") rho_cc2
 
        write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char6),trim(char7)
    endif
+
+! Finished printing stuff ^^
+
 
    if ( cnvgom < eps .and. cnvgc1 < eps .and. cnvgc2 < eps .and. &
         cnvgh1 < eps .and. cnvgh2 < eps ) then
@@ -706,7 +735,9 @@ write (char7, "(F10.7)") rho_cc2
 !      exit
 !   endif
 
-enddo                                               ! END OF THE ITERATION CYCLE
+enddo                   
+! END OF THE ITERATION CYCLE
+
 
 if ( q >= maxit ) then
    qfinal = maxit
@@ -783,14 +814,14 @@ endif
             qfinal, initial_model_type, model_number, ra, za, phia,          &
             rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,          &
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,              &
-            com, volume_factor, eps, hem1, hem2, rhoem1, rhoem2,             &
+            com, volume_factor, hem1, hem2, rhoem1, rhoem2,             &
             mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e)
 
 
   call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,  &
                    initial_model_type, model_number, ra, za, phia, rb, zb,   &
                    phib, rc, zc, phic, rhm1, rhm2, 1.5, rhom1, rhom2, xavg1, &
-                   xavg2, separation, com, volume_factor, eps)
+                   xavg2, separation, com, volume_factor)
 
 
 

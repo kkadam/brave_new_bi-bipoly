@@ -2,7 +2,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
 	            qfinal, initial_model_type, model_number, ra, za, phia,  &
 	            rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,  &
 	            rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation, &
-	            com, volume_factor, eps, hem1, hem2, rhoem1, rhoem2,     &
+	            com, volume_factor, hem1, hem2, rhoem1, rhoem2,     &
 	            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e)
   implicit none
   include 'runscf.h'
@@ -28,7 +28,6 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, intent(in) :: rhoem1, rhoem2  
   real, intent(in) :: xavg1, xavg2, separation, com
   real, intent(in) :: volume_factor
-  real, intent(in) :: eps
   real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e
 
 !
@@ -63,7 +62,6 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
 
   real, dimension(numr,numz,numphi) :: rchpot
   real, dimension(numr,numz,numphi) :: temp
-  real, parameter :: epsilon = 1.0e-6 ! expected minimmum density at the star edge
   real :: gammac1, gammac2, gammae1,gammae2
   real :: volr1, volr2, reffr1, reffr2, global_volr1, global_volr2
   real :: vol1, vol2, reff1, reff2
@@ -100,13 +98,10 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   integer :: phi1, phi2, phi3, phi4
   integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
   integer, dimension(1) :: center1, center2
-  real :: densmin  
 !
 !*****************************************************************************************
 
   model_template = 'model_details_'
-
-densmin = 1e-10
 
 phi1 = int(numphi / 4.0) - 1
 phi2 = int(numphi /  4.0) + 1
@@ -215,10 +210,10 @@ ae2=0
 print*,"=============================================="
 print*, "rho_1d", rho_1d, "rho_c1d", rho_c1d ,"FINAL" 
 print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e ,"FINAL" 
-print*, "nc1", nc1, "gammac1", gammac1, "gammae1", gammae1 
-print*, "nc2", nc2, "gammac2", gammac2, "gammae2", gammae2 
+!print*, "nc1", nc1, "gammac1", gammac1, "gammae1", gammae1 
+!print*, "nc2", nc2, "gammac2", gammac2, "gammae2", gammae2 
 print*, "Qfinal", qfinal
-print*, "hm1", hm1(qfinal), "hm2", hm2(qfinal) 
+!print*, "hm1", hm1(qfinal), "hm2", hm2(qfinal) 
 
 
   period = 2.0 * pi /  omega
@@ -545,19 +540,19 @@ enddo
   enddo
 
   do i = rlwb, rupb
-     if (rho(i,2,numphi/2).gt.(2*densmin)) then
+     if (rho(i,2,numphi/2+1).gt.(2*densmin)) then
         diae2=diae2+1
      endif
-     if (rho(i,2,numphi/2).gt.(rho_2e)) then
+     if (rho(i,2,numphi/2+1).gt.(rho_2e)) then
         diac2=diac2+1
      endif
   enddo
 
 !Find angular resolution (phi) of the core and the envelope 
    center1=maxloc(rho(:,2,1))
-   center2=maxloc(rho(:,2,numphi/2)) 
-   print*, "center1 = ", center1
-   print*, "center2 = ", center2
+   center2=maxloc(rho(:,2,numphi/2+1)) 
+!   print*, "center1 = ", center1
+!   print*, "center2 = ", center2
 
   do i = 1, phi1
      if (rho(center1(1),2,i).gt.(2*densmin)) then

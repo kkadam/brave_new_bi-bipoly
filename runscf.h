@@ -1,16 +1,16 @@
-    integer, parameter :: numr = 258
-    integer, parameter :: numz = 258
-    integer, parameter :: numphi = 512
+    integer, parameter :: numr = 130
+    integer, parameter :: numz = 130
+    integer, parameter :: numphi = 256
 
        real, parameter :: n1 = 1.5
-       real, parameter :: nc1 = 3.0
+       real, parameter :: nc1 = 1.5
        real, parameter :: mu1 = 1.0
-       real, parameter :: muc1 = 2.0
+       real, parameter :: muc1 = 1.0
 
        real, parameter :: n2 = 1.5
-       real, parameter :: nc2 = 3.0
+       real, parameter :: nc2 = 1.5
        real, parameter :: mu2 = 1.0
-       real, parameter :: muc2 = 2.0
+       real, parameter :: muc2 = 1.0
        
 !       integer, parameter :: phi1 = int(numphi / 4.0) - 1
 !       integer, parameter :: phi2 = int(numphi / 4.0) + 1
@@ -41,6 +41,12 @@
        real, parameter :: numphiinv = 1.0 / numphi
 
        integer, parameter :: maxit = 100 
+
+       real, parameter :: epsilon = 1.0e-5 ! expected minimmum density at the star edge
+
+       real, parameter :: eps = 1e-4  ! Convergance criterion for all parameters
+
+       real, parameter :: densmin = 1e-10 ! Density floor
 
 
 ! restrictions on the above parameters:

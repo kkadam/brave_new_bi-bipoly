@@ -1,8 +1,7 @@
 subroutine ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h,           &
                          qfinal, initial_model_type, model_number, ra, za, phia, &
                          rb, zb,  phib, rc, zc, phic, rhm1, rhm2, pin, rhom1,    &
-                         rhom2, xavg1, xavg2, separation,  com, volume_factor,   &
-                         eps)
+                         rhom2, xavg1, xavg2, separation,  com, volume_factor)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -39,7 +38,6 @@ real, intent(in) :: xavg1, xavg2, separation, com
 
 real, intent(in) :: volume_factor
 
-real, intent(in) :: eps
 
 !
 !*****************************************************************************************
@@ -89,8 +87,6 @@ common /processor_grid/ iam, numprocs, iam_on_top,           &
 real, dimension(numr_dd,numz_dd,numphi) :: rchpot
 
 real, dimension(numr_dd,numz_dd,numphi) :: temp
-
-real, parameter :: epsilon = 1.0e-5 ! expected minimmum density at the star edge
 
 real :: gamma
 

@@ -1,9 +1,10 @@
 subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
-	            qfinal, initial_model_type, model_number, ra, za, phia,  &
-	            rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,  &
-	            rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation, &
-	            com, volume_factor, hem1, hem2, rhoem1, rhoem2,     &
-	            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e)
+            qfinal, initial_model_type, model_number, ra, za, phia,  &
+            rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,  &
+            rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,      &
+            com, volume_factor, hem1, hem2, rhoem1, rhoem2,          &
+            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e,      &
+            pres_d, pres_e)
   implicit none
   include 'runscf.h'
 !*******************************************************************************
@@ -28,7 +29,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, intent(in) :: rhoem1, rhoem2  
   real, intent(in) :: xavg1, xavg2, separation, com
   real, intent(in) :: volume_factor
-  real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e
+  real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e
 
 !
 !*******************************************************************************
@@ -687,16 +688,20 @@ write(11,*) 'Convergence Criterion: ', eps
 write(11,*) 'Number of Iterations: ', qfinal-1
 write(11,*) 'Initial Model Type: ', initial_model_type
 write(11,*)
+write(11,*) 'rho_1d=',rho_1d,'rho_c1d=',rho_c1d
+write(11,*) 'rho_2e=',rho_2e,'rho_c2e=',rho_c2e
+
 close(11)
 	 
-print*, "File", trim(model_file), "printed"
+print*, "File ", trim(model_file), " printed"
 
 rho1i = (rho_1d+rho_c1d)/2.0
 rho2i = (rho_2e+rho_c2e)/2.0
 
 open(unit=13,file="autoread.dat")
 write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, " ",&
-     omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho_1d, " ", rho_2e
+     omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho_c1d, " ",&
+      rho_1d, " ",rho_c2e, " ",rho_2e, " ", pres_d, " ", pres_e, " ", xcrit
 close(13)
 
 end subroutine binary_output

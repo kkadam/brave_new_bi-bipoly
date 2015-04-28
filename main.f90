@@ -46,7 +46,7 @@ integer, dimension(numr_procs*numz_procs,2) :: pe_coord
 
 integer :: one, two
 
-integer :: I, J, N, frnum
+integer :: I, J, N
 
 real :: time1, time2
 

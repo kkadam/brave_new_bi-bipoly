@@ -56,6 +56,8 @@ common /processor_grid/ iam, numprocs, iam_on_top,           &
                         row_num, pe_grid, iam_root,          &
                         REAL_SIZE, INT_SIZE
 
+real, dimension(numr_dd,numz_dd,numphi) :: pres
+
 !
 !**************************************************************************************************
 !
@@ -115,7 +117,7 @@ integer :: ierror
   real :: psi_a, psi_b, psi_c, psi_d, psi_e
 
 
-  real :: rho_c1d, rho_1d, rho_c2e, rho_2e
+  real :: rho_c1d, rho_1d, rho_c2e, rho_2e, pres_d, pres_e
   real :: h_c1d, h_e1d, h_c2e, h_e2e 
   real :: rhoem1, rhoem2, norm1, norm2
   real :: rem1, zem1, phiem1, rem2, zem2, phiem2
@@ -128,12 +130,14 @@ integer :: ierror
 
   integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
   integer, dimension(1) :: center1, center2
+  real :: div
 !
 !**************************************************************************************************
 
 call cpu_time(time1)
 
 qfinal = 1
+div=0.02
 
 phi1 = int(numphi / 4.0) - 1
 phi2 = int(numphi / 4.0) + 1
@@ -708,7 +712,7 @@ write (char7, "(F10.7)") rho_cc2
 
 
    if ( iam_root ) then
-       print*, "mass ratio = ", mass1(Q)/mass2(Q),"or",mass2(Q)/mass1(Q)
+       print*, "mass ratio = ", "m1/m2=",mass1(Q)/mass2(Q),"or m2/m1=",mass2(Q)/mass1(Q)
        print*, "core mass ratio 1 = ", mass_c1(Q)/mass1(Q)
        print*, "core mass ratio 2 = ", mass_c2(Q)/mass2(Q)
        print*, "core1 resolution: ", diac1, ac1 
@@ -725,11 +729,22 @@ write (char7, "(F10.7)") rho_cc2
 
 ! Finished printing stuff ^^
 
-
+! Convergance test
    if ( cnvgom < eps .and. cnvgc1 < eps .and. cnvgc2 < eps .and. &
         cnvgh1 < eps .and. cnvgh2 < eps ) then
       exit
-   endif
+   elseif ( Q > 20 .and. (cnvgom > div .or. cnvgc1 > div .or. cnvgc2 > div .or. &
+        cnvgh1  > div .or. cnvgh2 > div)) then
+      print*,"====================================="
+      print*,"####   Solution diverged. :(    ####"
+      print*,"====================================="
+      exit
+   elseif (mass1(Q)/mass2(Q) > 20 .or. mass2(Q)/mass1(Q) > 20) then
+      print*,"====================================================="
+      print*,"####    Divergence by extreme mass ratio. X(    ####"
+      print*,"====================================================="
+      exit   
+   endif 
 
 !   if ( virial_error > virial_error_prev .and. Q > 10  ) then
 !      exit
@@ -795,6 +810,7 @@ enddo
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
           cc2(qfinal) = h_c2e + pot_e+ omsq(q)*psi_e
 
+
   hm1(qfinal) = hm1(qfinal-1)
   hm2(qfinal) = hm2(qfinal-1)
   hem1(qfinal) = hem1(qfinal-1)
@@ -805,9 +821,27 @@ enddo
   mass_c2(qfinal) = mass_c2(qfinal-1)
   rhoem1 = rho(rem1,zem1,phiem1)
   rhoem2 = rho(rem2,zem2,phiem2)  
-  
+
+
+! Calculate pressure
+
+!  print*,"hm1",hm1(qfinal)
+  kappac1 = rhom1*hm1(qfinal)/(nc1+1.0)/rhom1**(gammac1)
+  kappac2 = rhom2*hm2(qfinal)/(nc2+1.0)/rhom2**(gammac2)
+  kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
+  kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
+
+  print*, "kappas used for pressure file:"
+  print*, "kappac1=",kappac1,"kappae1=",kappae1
+  print*, "kappac2=",kappac2,"kappae2=",kappae2
+
+  call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
+          pres_d = pres(rd,zd,phid)
+          pres_e = pres(re,ze,phie)
+ 
+ 
 if ( iam_root ) then
-   write(13,*) iam, 'Model: ', model_number, ' done in time: ', time2 - time1
+!   write(13,*) iam, 'Model: ', model_number, ' done in time: ', time2 - time1
 endif
 
   call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
@@ -815,7 +849,7 @@ endif
             rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,          &
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,              &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,             &
-            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e)
+            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e)
 
 
   call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,  &
@@ -825,16 +859,17 @@ endif
 
 
 
-call cpu_time(time1)
+!call cpu_time(time1)
 
-call output(1000, 'density.bin', rho)
+call output('density.bin','star',rho)
+call output('pressure.bin','pres',pres)
 
-call cpu_time(time2)
+!call cpu_time(time2)
 
-if ( iam_root ) then
-   write(13,*) iam, 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
-   close(13)
-   close(12)
-endif
+!if ( iam_root ) then
+!   write(13,*) iam, 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
+!   close(13)
+!   close(12)
+!endif
 
 end subroutine binary_scf

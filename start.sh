@@ -1,8 +1,8 @@
 #!/bin/bash
 ### Set important parameters ###
-run=m13
-readme="First SHR!!"
-resolution=SHR  
+run=m68
+readme="q=0.36 with cleaning between the stars bug fixed"
+resolution=LR  
 #Options for resolution are LR, HR, SHR
 work_dir=/work/kkadam/scf_runs
 greens=".true."
@@ -86,7 +86,7 @@ cp scf $run
 cp init $run
 cp runscf.h $run
 echo $readme > $run/readme
-
+#cp binary_scf.f90 $run
 
 sed -i -e '2d' bs
 sed -i "2i\#PBS -q $queue" bs

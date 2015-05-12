@@ -512,27 +512,27 @@ rho_cc2=0.0
 
 
    ! zero out the density field between the axis and the inner boundary points
-   do K = philwb, phi1
-      do J = zlwb, zupb
-         do I = rlwb, rupb
+   do K = philwb, phi1+1
+      do J = 1, zupb
+         do I = 1, rupb
             if ( rhf(I) <= rhf_g(rb) ) then
                rho(I,J,K) = 0.0
             endif
          enddo
       enddo
    enddo
-   do K = phi2, phi3
-      do J = zlwb, zupb
-         do I = rlwb, rupb
+   do K = phi2-1, phi3+1
+      do J = 1, zupb
+         do I = 1, rupb
             if ( rhf(I) <= rhf_g(rc) ) then
                rho(I,J,K) = 0.0
             endif
          enddo
       enddo
    enddo
-   do K = phi4, phiupb
-      do J = zlwb, zupb
-         do I = rlwb, rupb
+   do K = phi4-1, phiupb
+      do J = 1, zupb
+         do I = 1, rupb
             if ( rhf(I) <= rhf_g(rb) ) then
                rho(I,J,K) = 0.0
             endif

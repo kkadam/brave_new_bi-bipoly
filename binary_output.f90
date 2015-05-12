@@ -699,9 +699,9 @@ rho1i = (rho_1d+rho_c1d)/2.0
 rho2i = (rho_2e+rho_c2e)/2.0
 
 open(unit=13,file="autoread.dat")
-write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, " ",&
+write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, " ",  &
      omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho_c1d, " ",&
-      rho_1d, " ",rho_c2e, " ",rho_2e, " ", pres_d, " ", pres_e, " ", xcrit
+      rho_1d, " ",rho_c2e, " ",rho_2e, " ", pres_d, " ", pres_e, " ", xcrit, " ", com 
 close(13)
 
 end subroutine binary_output

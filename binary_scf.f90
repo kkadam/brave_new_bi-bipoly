@@ -131,6 +131,7 @@ integer :: ierror
   integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
   integer, dimension(1) :: center1, center2
   real :: div
+  integer :: div_flag, div_it
 !
 !**************************************************************************************************
 
@@ -138,6 +139,8 @@ call cpu_time(time1)
 
 qfinal = 1
 div=0.02
+div_flag=0
+div_it=20
 
 phi1 = int(numphi / 4.0) - 1
 phi2 = int(numphi / 4.0) + 1
@@ -733,16 +736,18 @@ write (char7, "(F10.7)") rho_cc2
    if ( cnvgom < eps .and. cnvgc1 < eps .and. cnvgc2 < eps .and. &
         cnvgh1 < eps .and. cnvgh2 < eps ) then
       exit
-   elseif ( Q > 20 .and. (cnvgom > div .or. cnvgc1 > div .or. cnvgc2 > div .or. &
+   elseif ( Q > div_it .and. (cnvgom > div .or. cnvgc1 > div .or. cnvgc2 > div .or. &
         cnvgh1  > div .or. cnvgh2 > div)) then
       print*,"====================================="
       print*,"####   Solution diverged. :(    ####"
       print*,"====================================="
+      div_flag=1
       exit
-   elseif (mass1(Q)/mass2(Q) > 20 .or. mass2(Q)/mass1(Q) > 20) then
+   elseif (mass1(Q)/mass2(Q) > div_it .or. mass2(Q)/mass1(Q) > div_it) then
       print*,"====================================================="
       print*,"####    Divergence by extreme mass ratio. X(    ####"
       print*,"====================================================="
+      div_flag=1
       exit   
    endif 
 
@@ -758,6 +763,11 @@ if ( q >= maxit ) then
    qfinal = maxit
 else
    qfinal = q + 1
+endif
+
+if (q==99 .and. ( cnvgom > eps .or. cnvgc1 > eps .or. cnvgc2 > eps .or. &
+        cnvgh1 > eps .or. cnvgh2 > eps) ) then
+   div_flag=1
 endif
 
   rhm1(1) = rhf(rm1)
@@ -848,8 +858,9 @@ endif
             qfinal, initial_model_type, model_number, ra, za, phia,          &
             rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,          &
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,              &
-            com, volume_factor, hem1, hem2, rhoem1, rhoem2,             &
-            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e)
+            com, volume_factor, hem1, hem2, rhoem1, rhoem2,                  &
+            mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e,              &
+            pres_d, pres_e, div_flag)
 
 
   call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,  &

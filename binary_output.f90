@@ -4,7 +4,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,      &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,          &
             mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e,      &
-            pres_d, pres_e)
+            pres_d, pres_e, div_flag)
   implicit none
   include 'runscf.h'
 !*******************************************************************************
@@ -30,6 +30,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, intent(in) :: xavg1, xavg2, separation, com
   real, intent(in) :: volume_factor
   real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e
+  integer, intent(in) :: div_flag
 
 !
 !*******************************************************************************
@@ -321,6 +322,8 @@ print*, "Qfinal", qfinal
       rchpot(rlwb-1,K,L+numphi_by_two) = rho(rlwb,K,L)
     enddo
   enddo
+
+call output('roche.bin','roche',rchpot)
 
 ! find  the minimum value of the Roche potential  wth, can be fixed
   rchmin = 0.0
@@ -690,6 +693,16 @@ write(11,*) 'Initial Model Type: ', initial_model_type
 write(11,*)
 write(11,*) 'rho_1d=',rho_1d,'rho_c1d=',rho_c1d
 write(11,*) 'rho_2e=',rho_2e,'rho_c2e=',rho_c2e
+
+if (div_flag==1) then
+   write(11,*) '======================================'
+   write(11,*) '          Solution diverged           '
+   write(11,*) '======================================'
+else
+   write(11,*) '======================================'
+   write(11,*) '          Solution converged          '
+   write(11,*) '======================================'
+endif
 
 close(11)
 	 

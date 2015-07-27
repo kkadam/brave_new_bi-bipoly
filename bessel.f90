@@ -58,14 +58,14 @@ logical :: iam_on_top, iam_on_bottom, iam_on_axis,                     &
 integer :: column_num, row_num
 integer :: iam, down_neighbor, up_neighbor,                            &
            in_neighbor, out_neighbor, root,                            &
-           REAL_SIZE, INT_SIZE, numprocs
-integer, dimension(numr_procs,numz_procs) :: pe_grid
-common /processor_grid/ iam, numprocs, iam_on_top,                     &
+           REAL_SIZE, INT_SIZE
+
+common /processor_grid/ iam, iam_on_top,                     &
                         iam_on_bottom, iam_on_axis,                    &
                         iam_on_edge, down_neighbor,                    &
                         up_neighbor, in_neighbor,                      &
                         out_neighbor, root, column_num,                &
-                        row_num, pe_grid, iam_root,                    &
+                        row_num, iam_root,                    &
                         REAL_SIZE, INT_SIZE
 
 !*
@@ -217,13 +217,15 @@ enddo
 message_length = (numr_dd-2)*mmax
 lwrb = 2
 uprb = numr_dd - 1
-do I = numprocs - numr_procs, numprocs - 1
+!do I = numprocs - numr_procs, numprocs - 1
+!do I = 0,0
    do M = 1, mmax
       counter = lwrb
       do J = 1, numr_dd - 2
          t_buff_C(J,M) = StC(counter,M)
          t_buff_S(J,M) = StS(counter,M)
          counter = counter + 1
+!         print*,1
       enddo
    enddo
    t_buff_C_summed = t_buff_C
@@ -233,12 +235,13 @@ do I = numprocs - numr_procs, numprocs - 1
          do J = 1, numr_dd - 2
             sum_top_C(J+1,M) = t_buff_C_summed(J,M)
             sum_top_S(J+1,M) = t_buff_S_summed(J,M)
+!            print*,2
          enddo
       enddo
    endif
    lwrb = uprb + 1
    uprb = lwrb + numr_dd - 3
-enddo
+!enddo
 
 ! communicate the side values
 !  count through pes on outer edge of pe grid
@@ -246,13 +249,16 @@ enddo
 message_length = (numz_dd-2) * mmax
 lwrb = 2
 uprb = numz_dd - 1
-do I = numr_procs - 1, numprocs - 1, numr_procs
+!do I = numr_procs - 1, numprocs - 1, numr_procs
+print*,"PRE LOOP"
+!do I= 0,0
    do M = 1, mmax
       counter = lwrb
       do K = 1, numz_dd - 2
          s_buff_C(K,M) = SsC(counter,M)
          s_buff_S(K,M) = SsS(counter,M)
          counter = counter + 1
+!         print*,3
       enddo
    enddo
    s_buff_C_summed = s_buff_C
@@ -262,13 +268,15 @@ do I = numr_procs - 1, numprocs - 1, numr_procs
          do K = 1, numz_dd - 2
             sum_sid_C(K+1,M) = s_buff_C_summed(K,M)
             sum_sid_S(K+1,M) = s_buff_S_summed(K,M)
+!            print*,4
          enddo
       enddo
    endif
    lwrb = uprb + 1
    uprb = lwrb + numz_dd - 3
-enddo
+!enddo
 
+print*,"POST LOOP"
 ! if on top of the pe grid reduce the convolution
 ! of G(r|r') with rho to a potential at the
 ! top of the grid

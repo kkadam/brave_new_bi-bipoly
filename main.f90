@@ -26,22 +26,20 @@ logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
 integer :: column_num, row_num
 integer :: iam, down_neighbor, up_neighbor,                  &
            in_neighbor, out_neighbor, root,                  &
-           REAL_SIZE, INT_SIZE, numprocs
-integer, dimension(numr_procs,numz_procs) :: pe_grid
-common /processor_grid/ iam, numprocs, iam_on_top,           &
+           REAL_SIZE, INT_SIZE
+
+common /processor_grid/ iam, iam_on_top,           &
                         iam_on_bottom, iam_on_axis,          &
                         iam_on_edge, down_neighbor,          &
                         up_neighbor, in_neighbor,            &
                         out_neighbor, root, column_num,      &
-                        row_num, pe_grid, iam_root,          &
+                        row_num, iam_root,          &
                         REAL_SIZE, INT_SIZE
 
 !*
 !************************************************************      
 !*
 !*   Local variables
-
-integer, dimension(numr_procs*numz_procs,2) :: pe_coord
 
 integer :: one, two
 
@@ -81,7 +79,6 @@ INT_SIZE = 8
 call cpu_time(time1)
 
 ! Initialize local variables
-pe_coord = 0
 
 !  Set up logical and integer variables that describe the
 !  processor grid and the message passing pattern
@@ -94,7 +91,6 @@ iam_root = .false.
 root = 0
 
 iam = 0
-numprocs = numr_procs * numz_procs
 if( iam == 0 ) iam_root = .true.
 
 !  Make sure the input data in runhdro.h doesn't violate
@@ -131,39 +127,29 @@ if( iam == 0 ) iam_root = .true.
 !   stop
 !endif
 
-!  Setup the logical pe grid
-N = 1
-do J = 1, numz_procs
-   do I = 1, numr_procs
-      pe_coord(N,1) = I-1
-      pe_coord(N,2) = J-1
-      pe_grid(I,J) = N-1
-      N = N + 1
-   enddo
-enddo
 
 !  Determine which processors have external boundary zones
 !  in place of a guard cell layer that will require special
 !  treatment
-if( pe_coord(iam+1,2) == 0 ) iam_on_bottom = .true.
+iam_on_bottom = .true.
 
-if( pe_coord(iam+1,2) == numz_procs-1 ) iam_on_top = .true.
+ iam_on_top = .true.
 
-if( pe_coord(iam+1,1) == 0 ) iam_on_axis = .true.
+ iam_on_axis = .true.
 
-if( pe_coord(iam+1,1) == numr_procs-1 ) iam_on_edge = .true. 
+ iam_on_edge = .true. 
 
 !  Determine passing partners for comm and related routines
 if( iam_on_top ) then
    up_neighbor = -1
 else
-   up_neighbor = iam + numr_procs
+   up_neighbor = iam + 1
 endif
 
 if( iam_on_bottom ) then
    down_neighbor = -1
 else
-   down_neighbor = iam - numr_procs
+   down_neighbor = iam - 1
 endif
 
 if( iam_on_axis ) then
@@ -180,9 +166,9 @@ endif
 
 !  Determine whether pe is in an even row or column to order
 !  message passing
-row_num = pe_coord(iam+1,2)
+row_num = 0
  
-column_num = pe_coord(iam+1,1)
+column_num = 0
 
 
  have_green_funcs = .true.
@@ -208,6 +194,14 @@ phic = numphi / 2 + 1
 qfinal = 1
 
 do I = first_model, last_model
+
+print*, iam_on_top, iam_on_bottom, iam_on_axis,           &
+           iam_on_edge, iam_root
+print*, column_num, row_num
+print*, iam, down_neighbor, up_neighbor,                  &
+           in_neighbor, out_neighbor, root,                  &
+           REAL_SIZE, INT_SIZE
+
 
    read(20,*) model_number, ra, rb, rc ,rd ,re , initial_model_type, rhom1, rhom2, frac
 

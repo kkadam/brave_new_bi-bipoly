@@ -51,14 +51,14 @@ logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
 integer :: column_num, row_num
 integer :: iam, down_neighbor, up_neighbor,                  &
            in_neighbor, out_neighbor, root,                  &
-           REAL_SIZE, INT_SIZE, numprocs
-integer, dimension(numr_procs,numz_procs) :: pe_grid
-common /processor_grid/ iam, numprocs, iam_on_top,           &
+           REAL_SIZE, INT_SIZE
+
+common /processor_grid/ iam, iam_on_top,           &
                         iam_on_bottom, iam_on_axis,          &
                         iam_on_edge, down_neighbor,          &
                         up_neighbor, in_neighbor,            &
                         out_neighbor, root, column_num,      &
-                        row_num, pe_grid, iam_root,          &
+                        row_num, iam_root,          &
                         REAL_SIZE, INT_SIZE
 
 

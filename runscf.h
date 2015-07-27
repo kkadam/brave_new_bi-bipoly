@@ -17,12 +17,10 @@
        integer, parameter :: phi3 = int(3.0 * numphi / 4.0) - 1
        integer, parameter :: phi4 = int(3.0 * numphi / 4.0) + 1
        
-       integer, parameter :: numr_procs = 1
-       integer, parameter :: numz_procs = 1
 
-       integer, parameter :: numr_dd = ( (numr - 2)/numr_procs ) + 2     !numr
+       integer, parameter :: numr_dd = numr
 
-       integer, parameter :: numz_dd = ( (numz - 2)/numz_procs ) + 2     !numz 
+       integer, parameter :: numz_dd = numz 
 
        integer, parameter :: rlwb = 2, rupb = numr_dd - 1       !2, numr-1
 
@@ -30,9 +28,9 @@
 
        integer, parameter :: philwb = 1, phiupb = numphi
 
-       integer, parameter :: numr_dd_z = (numr-2)/numz_procs + 2
+       integer, parameter :: numr_dd_z = numr
 
-       integer, parameter :: numphi_dd = numphi/numr_procs
+       integer, parameter :: numphi_dd = numphi
 
        integer, parameter :: numphi_by_two = numphi / 2
 

@@ -18,19 +18,11 @@
        integer, parameter :: phi4 = int(3.0 * numphi / 4.0) + 1
        
 
-       integer, parameter :: numr_dd = numr
+       integer, parameter :: rlwb = 2, rupb = numr - 1     
 
-       integer, parameter :: numz_dd = numz 
-
-       integer, parameter :: rlwb = 2, rupb = numr_dd - 1       !2, numr-1
-
-       integer, parameter :: zlwb = 2, zupb = numz_dd - 1       !2, numz-1
+       integer, parameter :: zlwb = 2, zupb = numz - 1      
 
        integer, parameter :: philwb = 1, phiupb = numphi
-
-       integer, parameter :: numr_dd_z = numr
-
-       integer, parameter :: numphi_dd = numphi
 
        integer, parameter :: numphi_by_two = numphi / 2
 

@@ -50,9 +50,8 @@ real :: dr, dz, dphi, drinv, dzinv, dphiinv
 common /coord_differentials/ dr, dz, dphi,                             &
                              drinv, dzinv, dphiinv
     
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition
+common /boundary_conditions/ boundary_condition
 
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,                     &
            iam_on_edge, iam_root
@@ -102,7 +101,7 @@ real :: factor
 
 integer :: J, K, L, M, lwrb, uprb, counter, rindex, zindex
 
-integer :: I, ierror, message_length
+integer :: I, message_length
 
 !*
 !****************************************************************
@@ -133,7 +132,6 @@ s_buff_C = 0.0
 s_buff_C_summed = 0.0
 s_buff_S = 0.0
 s_buff_S_summed = 0.0
-ierror = 0
 lwrb = 0
 uprb = 0
 message_length = 0
@@ -228,11 +226,7 @@ do I = numprocs - numr_procs, numprocs - 1
          counter = counter + 1
       enddo
    enddo
-   !call mpi_reduce(t_buff_C,t_buff_C_summed,message_length,             &
-   !                REAL_SIZE,MPI_SUM,I,MPI_COMM_WORLD,ierror)
    t_buff_C_summed = t_buff_C
-   !call mpi_reduce(t_buff_S,t_buff_S_summed,message_length,             &
-   !                REAL_SIZE,MPI_SUM,I,MPI_COMM_WORLD,ierror)
    t_buff_S_summed = t_buff_S
    if( iam == I ) then
       do M = 1, mmax
@@ -261,11 +255,7 @@ do I = numr_procs - 1, numprocs - 1, numr_procs
          counter = counter + 1
       enddo
    enddo
-   !call mpi_reduce(s_buff_C,s_buff_C_summed,message_length,             &
-   !                REAL_SIZE,MPI_SUM,I,MPI_COMM_WORLD,ierror)
    s_buff_C_summed = s_buff_C
-   !call mpi_reduce(s_buff_S,s_buff_S_summed,message_length,             &
-   !                REAL_SIZE,MPI_SUM,I,MPI_COMM_WORLD,ierror)
    s_buff_S_summed = s_buff_S
    if( iam == I ) then
       do M = 1, mmax

@@ -4,7 +4,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,      &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,          &
             mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e,      &
-            pres_d, pres_e, div_flag)
+            pres_d, pres_e, rem1, rem2, div_flag)
   implicit none
   include 'runscf.h'
 !*******************************************************************************
@@ -30,6 +30,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, intent(in) :: xavg1, xavg2, separation, com
   real, intent(in) :: volume_factor
   real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e
+  integer, intent(in) :: rem1, rem2
   integer, intent(in) :: div_flag
 
 !
@@ -53,10 +54,6 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, dimension(numphi) :: cosine, sine
   common /trig/ cosine, sine
 
-  real :: pi, grav
-  common /constants/ pi, grav
-
-!
 !*******************************************************************************
 !
 ! locall variables
@@ -97,18 +94,12 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   integer :: index
   character(len=50) :: model_template
   character(len=56) :: model_file
-  integer :: phi1, phi2, phi3, phi4
   integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
   integer, dimension(1) :: center1, center2
 !
 !*****************************************************************************************
 
   model_template = 'model_details_'
-
-phi1 = int(numphi / 4.0) - 1
-phi2 = int(numphi /  4.0) + 1
-phi3 = int(3.0 * numphi / 4.0) - 1
-phi4 = int(3.0 * numphi / 4.0) + 1
 
   gammae1 = 1.0 + 1.0/n1
   gammae2 = 1.0 + 1.0/n2

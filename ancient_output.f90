@@ -60,9 +60,6 @@ common /global_grid/ rhf_g,r_g,rhfinv_g,rinv_g,zhf_g
 real, dimension(numphi) :: cosine, sine
 common /trig/ cosine, sine
 
-real :: pi, grav
-common /constants/ pi, grav
-
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
            iam_on_edge, iam_root
 integer :: column_num, row_num
@@ -144,15 +141,9 @@ real :: l2loc, l3loc, temp_l2loc, temp_l3loc
 
 integer :: louter1,  louter2
 
-integer :: phi1, phi2, phi3, phi4
-
 integer :: I, J, K, L
 
 integer :: index
-
-integer :: ierror
-
-!integer, dimension(MPI_STATUS_SIZE) :: istatus
 
 character(len=50) :: model_template
 
@@ -162,11 +153,6 @@ character(len=56) :: model_file
 !*****************************************************************************************
 
 model_template = 'ancient_details_'
-
-phi1 = int(numphi / 4.0) - 1
-phi2 = int(numphi /  4.0) + 1
-phi3 = int(3.0 * numphi / 4.0) - 1
-phi4 = int(3.0 * numphi / 4.0) + 1
 
 gamma = 1.0 + 1.0 / pin
 
@@ -186,10 +172,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1,  REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1,  REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1,  REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1,  REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 s1 = volume_factor * ret1 / (pin+1.0)
 s2 = volume_factor * ret2 / (pin+1.0)
 stot = s1 + s2
@@ -203,10 +185,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 w1 = 0.5 * volume_factor * ret1
 w2 = 0.5 * volume_factor * ret2
 wtot = w1 + w2
@@ -220,10 +198,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 t1 = - omega * omega * volume_factor * ret1
 t2 = - omega * omega * volume_factor * ret2
 ttot = t1 + t2
@@ -249,10 +223,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 j1 = - 2.0 * omega * volume_factor * ret1
 j2 = - 2.0 * omega * volume_factor * ret2
 jtot = j1 + j2
@@ -266,10 +236,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 e1 = pin * volume_factor * kappa1 * ret1
 e2 = pin * volume_factor * kappa2 * ret2
 etot = e1 + e2
@@ -292,16 +258,12 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 vol1 = volume_factor * ret1
 vol2 = volume_factor * ret2
 reff1 = (0.75 * vol1 / pi)**(1.0/3.0)
 reff2 = (0.75 * vol2 / pi)**(1.0/3.0)
 
-! calculate the y moment oof the density distribution
+! calculate the y moment of the density distribution
 do K = philwb, phiupb
    do J = zlwb, zupb
       do I = rlwb, rupb
@@ -310,10 +272,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 yavg1 = volume_factor * ret1 / mass1(qfinal)
 yavg2 = volume_factor * ret2 / mass2(qfinal)
 

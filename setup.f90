@@ -21,9 +21,6 @@ logical, intent(in) :: have_green_funcs
 real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real :: pi, grav
-common /constants/ pi, grav
-
 real :: dr, dz, dphi, drinv, dzinv, dphiinv
 common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
 
@@ -39,9 +36,8 @@ common /global_grid/ rhf_g,r_g,rhfinv_g,rinv_g,zhf_g
 real, dimension(numphi) :: cosine, sine
 common /trig/ cosine, sine
 
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition
+common /boundary_conditions/ boundary_condition
 
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
            iam_on_edge, iam_root
@@ -65,27 +61,15 @@ common /processor_grid/ iam, numprocs, iam_on_top,           &
 
 integer :: J, K, L
 
-integer :: ierror
-
 real :: x, xinv, offset
 
 !*
 !*********************************************************************************      
 !  initialize the local variables
-ierror = 0
 x = 0.0
 xinv = 0.0
 offset = 0.0
 
-!  initialize the run parameters
-pi = acos(-1.0)
-grav = 1.0
-
-isym = 2
-
-!  if running with pi or equaorial symmetry then the boundary
-!  condition at the bottom of the grid has to be a wall
-!  condition
 if( isym == 2 .or. isym == 3 ) then
    boundary_condition(1) = 1
 endif

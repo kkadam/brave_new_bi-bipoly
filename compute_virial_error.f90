@@ -1,4 +1,4 @@
-subroutine compute_virial_error(psi, h, omega, pin, volume_factor, virial_error1, virial_error2, virial_error)
+subroutine compute_virial_error(psi, rho_1d, rho_2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -11,9 +11,7 @@ real, dimension(numr_dd, numphi), intent(in) :: psi
 
 real, dimension(numr_dd,numz_dd,numphi) :: h
 
-real, intent(in) :: omega
-
-real, intent(in) :: pin
+real, intent(in) :: omega, rho_1d, rho_2e
 
 real, intent(in) :: volume_factor
 
@@ -59,7 +57,7 @@ common /processor_grid/ iam, numprocs, iam_on_top,           &
 !
 !*****************************************************************************************
 !
-! locall variables
+! local variables
 !
 
 real, dimension(numr_dd,numz_dd,numphi) :: temp
@@ -72,13 +70,7 @@ real :: s1, s2, stot
 
 real :: ret1, ret2, global_ret1, global_ret2
 
-real :: gamma
-
-integer :: phi1, phi2, phi3, phi4
-
 integer :: I, J, K
-
-integer :: ierror
 
 !
 !*****************************************************************************************
@@ -87,28 +79,44 @@ virial_error = 0.0
 virial_error1 = 0.0
 virial_error2 = 0.0
 
-phi1 = int(numphi / 4.0) - 1
-phi2 = int(numphi /  4.0) + 1
-phi3 = int(3.0 * numphi / 4.0) - 1
-phi4 = int(3.0 * numphi / 4.0) + 1
-
-gamma = 1.0 + 1.0 / pin
-
 ! sum up the virial pressuure
-do K = philwb, phiupb
-   do J = zlwb, zupb
-      do I = rlwb, rupb
-         temp(I,J,K) = rhf(I) * h(I,J,K) * rho(I,J,K)
-      enddo
-   enddo
-enddo
+       do i = phi2, phi3
+          do j = 2, numz
+             do k = 2, numr
+               if (rho(k,j,i).gt.rho_2e) then
+                 temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc2+1.0)
+               else
+                 temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n2+1.0)
+               endif
+             enddo
+          enddo
+       enddo
+       do i = phi4, numphi
+          do j = 2, numz
+             do k = 2, numr
+               if (rho(k,j,i).gt.rho_1d) then
+                 temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)
+               else
+                 temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)
+               endif
+             enddo
+          enddo
+       enddo
+       do i = 1, phi1
+          do j = 2, numz
+             do k = 2, numr
+               if (rho(k,j,i).gt.rho_1d) then
+                 temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)
+               else
+                 temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)
+               endif
+             enddo
+          enddo
+       enddo
+
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1,  REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1,  REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1,  REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1,  REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-s1 = volume_factor * ret1 / (pin+1.0)
-s2 = volume_factor * ret2 / (pin+1.0)
+s1 = volume_factor * ret1 
+s2 = volume_factor * ret2 
 stot = s1 + s2
 
 ! sum up the potenntial energy
@@ -120,10 +128,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 w1 = 0.5 * volume_factor * ret1
 w2 = 0.5 * volume_factor * ret2
 wtot = w1 + w2
@@ -137,10 +141,6 @@ do K = philwb, phiupb
    enddo
 enddo
 call binary_sum(temp, ret1, ret2)
-!call mpi_reduce(ret1, global_ret1, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_reduce(ret2, global_ret2, 1, REAL_SIZE, MPI_SUM, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret1, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
-!call mpi_bcast(global_ret2, 1, REAL_SIZE, root, MPI_COMM_WORLD, ierror)
 t1 = - omega * omega * volume_factor * ret1
 t2 = - omega * omega * volume_factor * ret2
 ttot = t1 + t2

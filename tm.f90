@@ -40,9 +40,8 @@ common /global_grid/ rhf_g, r_g, rhfinv_g, rinv_g, zhf_g
 real :: gamma, piinv, four_pi
 common /pot_constants/ gamma, piinv, four_pi
 
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition 
+common /boundary_conditions/ boundary_condition 
 
 !*
 !****************************************************************

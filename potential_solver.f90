@@ -25,9 +25,8 @@ real :: dt, time, dt_visc
 integer :: tstep
 common /timestep/ dt, time, dt_visc, tstep
 
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition
+common /boundary_conditions/ boundary_condition
 
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
            iam_on_edge, iam_root

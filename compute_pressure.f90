@@ -5,18 +5,12 @@ include 'runscf.h'
   real :: rho_c1d, rho_1d, rho_c2e, rho_2e
   real :: gammac1, gammac2, gammae1,gammae2
   real :: kappac1,kappac2, kappae1,kappae2
-  integer :: phi1, phi2, phi3, phi4
   real :: rhoth1, rhoth2
   integer :: i,j,k
 
 !
 !**************************************************************************************************
 !
-
-phi1 = int(numphi / 4.0) - 1
-phi2 = int(numphi / 4.0) + 1
-phi3 = int(3.0 * numphi / 4.0) - 1
-phi4 = int(3.0 * numphi / 4.0) + 1
 
    gammae1 = 1.0 + 1.0/n1
    gammae2 = 1.0 + 1.0/n2

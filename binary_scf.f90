@@ -1,4 +1,4 @@
-subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, pin, qfinal)
+subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, qfinal)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -13,7 +13,6 @@ integer, intent(in) :: ra, rb, rc, rd, re
 real, intent(in) :: rhom1
 real, intent(in) :: rhom2
 real, intent(in) :: frac
-real, intent(in) :: pin
 integer, intent(out) :: qfinal
 
 !
@@ -107,11 +106,7 @@ real :: temp_hm1, temp_hm2
 
 real, dimension(3) :: rhm1, rhm2, temp_rhm1, temp_rhm2
 
-integer :: phi1, phi2, phi3, phi4
-
 integer :: I, J, K, L, Q
-
-integer :: ierror
 
   real :: pot_a, pot_b, pot_c, pot_d, pot_e
   real :: psi_a, psi_b, psi_c, psi_d, psi_e
@@ -120,18 +115,20 @@ integer :: ierror
   real :: rho_c1d, rho_1d, rho_c2e, rho_2e, pres_d, pres_e
   real :: h_c1d, h_e1d, h_c2e, h_e2e 
   real :: rhoem1, rhoem2, norm1, norm2
-  real :: rem1, zem1, phiem1, rem2, zem2, phiem2
-  real :: rm1, zm1, phim1, rm2, zm2, phim2
+  integer :: rem1, zem1, phiem1, rem2, zem2, phiem2
+  integer :: rm1, zm1, phim1, rm2, zm2, phim2
   integer :: rmax
-   real :: gammac1, gammac2, gammae1,gammae2
-   real :: kappac1,kappac2, kappae1,kappae2
-   real :: rho_cc1, rho_cc2
-  character*20 char1,char2,char3,char4,char5,char6,char7 
+  real :: gammac1, gammac2, gammae1,gammae2
+  real :: kappac1,kappac2, kappae1,kappae2
+  real :: rho_cc1, rho_cc2
+ character*20 char1,char2,char3,char4,char5,char6,char7,char8
 
   integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
   integer, dimension(1) :: center1, center2
   real :: div
   integer :: div_flag, div_it
+  real :: x
+  real, dimension(numphi) :: cos_cc
 !
 !**************************************************************************************************
 
@@ -142,10 +139,16 @@ div=0.02
 div_flag=0
 div_it=20
 
-phi1 = int(numphi / 4.0) - 1
-phi2 = int(numphi / 4.0) + 1
-phi3 = int(3.0 * numphi / 4.0) - 1
-phi4 = int(3.0 * numphi / 4.0) + 1
+  
+  x = 0.0
+  do L = philwb, phiupb
+    phi(L) = x * dphi
+    x = x + 1.0
+  enddo
+
+  do L = 1, numphi
+    cos_cc(L) = cos(phi(L))
+ enddo
 
    gammae1 = 1.0 + 1.0/n1
    gammae2 = 1.0 + 1.0/n2
@@ -543,6 +546,30 @@ rho_cc2=0.0
       enddo
    enddo
 
+
+   do L = philwb, phiupb
+      do K = zlwb-1, zupb+1
+         do J = rlwb-1, rupb
+            if( ( rhf(J) * cos_cc(L) .ge. 0.0  ) .and. &
+                ( rhf(J) * cos_cc(L) .lt. rhf(rb) * 1.0 ) ) then
+                 rho(J,K,L) = 0.0
+            endif
+          enddo
+       enddo
+    enddo
+
+   do L = philwb, phiupb
+      do K = zlwb-1, zupb+1
+         do J = rlwb-1, rupb
+            if( ( rhf(J) * cos_cc(L) .le. 0.0  ) .and. &
+                ( rhf(J) * cos_cc(L) .gt. rhf(rc) * -1.0 ) ) then
+                 rho(J,K,L) = 0.0
+            endif
+          enddo
+       enddo
+    enddo
+
+
    ! impose the equatorial boundary condition
    if ( iam_on_bottom ) then
       do K = philwb, phiupb
@@ -566,8 +593,9 @@ rho_cc2=0.0
    cnvgh2 = abs( (hm2(Q) - hm2(Q-1)) / hm2(Q) )
 
    virial_error_prev = virial_error
-   call compute_virial_error(psi, h, sqrt(omsq(Q)), pin, volume_factor, virial_error1, &
-                             virial_error2, virial_error)
+
+   call compute_virial_error(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
+                             virial_error1, virial_error2, virial_error)
 
 ! Calculating stuff for printing >>
 
@@ -712,7 +740,7 @@ write (char4, "(F10.7)") cnvgh1
 write (char5, "(F10.7)") cnvgh2
 write (char6, "(F10.7)") rho_cc1
 write (char7, "(F10.7)") rho_cc2
-
+write (char8, "(F10.7)") virial_error
 
    if ( iam_root ) then
        print*, "mass ratio = ", "m1/m2=",mass1(Q)/mass2(Q),"or m2/m1=",mass2(Q)/mass1(Q)
@@ -727,14 +755,14 @@ write (char7, "(F10.7)") rho_cc2
       write(13,*) "hm1=",hm1(Q),"hm2=", hm2(Q)
       write(13,*)  "rho_2e", rho_2e, "rho_c2e", rho_c2e
 
-       write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char6),trim(char7)
+       write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char8)
    endif
 
 ! Finished printing stuff ^^
 
 ! Convergance test
    if ( cnvgom < eps .and. cnvgc1 < eps .and. cnvgc2 < eps .and. &
-        cnvgh1 < eps .and. cnvgh2 < eps ) then
+        cnvgh1 < eps .and. cnvgh2 < eps ) then!.and. virial_error < eps ) then
       exit
    elseif ( Q > div_it .and. (cnvgom > div .or. cnvgc1 > div .or. cnvgc2 > div .or. &
         cnvgh1  > div .or. cnvgh2 > div)) then
@@ -841,9 +869,9 @@ enddo
   kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
   kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
 
-  print*, "kappas used for pressure file:"
-  print*, "kappac1=",kappac1,"kappae1=",kappae1
-  print*, "kappac2=",kappac2,"kappae2=",kappae2
+!  print*, "kappas used for pressure file:"
+!  print*, "kappac1=",kappac1,"kappae1=",kappae1
+!  print*, "kappac2=",kappac2,"kappae2=",kappae2
 
   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
           pres_d = pres(rd,zd,phid)
@@ -860,13 +888,13 @@ endif
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,              &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,                  &
             mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e,              &
-            pres_d, pres_e, div_flag)
+            pres_d, pres_e, rem1, rem2, div_flag)
 
 
-  call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,  &
-                   initial_model_type, model_number, ra, za, phia, rb, zb,   &
-                   phib, rc, zc, phic, rhm1, rhm2, 1.5, rhom1, rhom2, xavg1, &
-                   xavg2, separation, com, volume_factor)
+!  call ancient_output(c1, c2, omsq, hm1, hm2, mass1, mass2, psi, h, qfinal,  &
+!                   initial_model_type, model_number, ra, za, phia, rb, zb,   &
+!                   phib, rc, zc, phic, rhm1, rhm2, 1.5, rhom1, rhom2, xavg1, &
+!                   xavg2, separation, com, volume_factor)
 
 
 

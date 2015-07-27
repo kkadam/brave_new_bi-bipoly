@@ -52,8 +52,8 @@ common /ADI_Z_sweep/ az, cz, alphaz, betaz, bzb, elambdazb
 real :: gamma, piinv, four_pi
 common /pot_constants/ gamma, piinv, four_pi
 
-real :: pi, grav, cfl_factor, den_cutoff, vlim_factor, viscosity
-common /constants/ pi, grav, cfl_factor, den_cutoff, vlim_factor, &
+real :: cfl_factor, den_cutoff, vlim_factor, viscosity
+common /constants/ cfl_factor, den_cutoff, vlim_factor, &
                    viscosity
 
 real :: dr, dz, dphi, drinv, dzinv, dphiinv
@@ -63,9 +63,8 @@ real, dimension(numr) :: rhf_g, r_g, rhfinv_g, rinv_g
 real, dimension(numz) :: zhf_g
 common /global_grid/ rhf_g, r_g, rhfinv_g, rinv_g, zhf_g
 
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition
+common /boundary_conditions/ boundary_condition
 
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
            iam_on_edge, iam_root
@@ -150,8 +149,8 @@ if ( have_green_funcs ) then
    open(unit=21,file='smz_array',form='unformatted',status='old')
    read(20) tmr
    read(21) smz
-   close(20,status='delete')
-   close(21,status='delete')
+   close(20)!,status='delete')
+   close(21)!,status='delete')
 else
    call tm(tmr)
    call sm(smz)

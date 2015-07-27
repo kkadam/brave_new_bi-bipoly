@@ -70,27 +70,18 @@ common /processor_grid/ iam, numprocs, iam_on_top,           &
 
 integer :: rindex_center_1, rindex_center_2
 
-integer :: phi1, phi2, phi3, phi4
-
 real :: sigsq1, sigsq2
 
 real :: radius_star1, radius_star2
 
 real :: k1, k2
 
-real :: dsq, d, pi
+real :: dsq, d
 
 integer :: I, J, K
 
 !
 !****************************************************************************************
-
-phi1 = int(numphi / 4.0) - 1
-phi2 = int(numphi / 4.0) + 1
-phi3 = int(3.0 * numphi / 4.0) - 1
-phi4 = int(3.0 * numphi / 4.0) + 1
-
-pi = acos(-1.0)
 
 select case(initial_model_type)
 

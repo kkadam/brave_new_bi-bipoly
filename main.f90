@@ -18,9 +18,8 @@ real :: dr, dz, dphi, drinv, dzinv, dphiinv
 common /coord_differentials/ dr, dz, dphi,                   &    
                              drinv, dzinv, dphiinv
 
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition
+common /boundary_conditions/ boundary_condition
 
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
            iam_on_edge, iam_root
@@ -54,8 +53,6 @@ integer :: qfinal
 
 integer :: first_model, last_model
 
-integer :: ierror
-
 integer :: ra, za, phia
 
 integer :: rb, zb, phib
@@ -72,13 +69,9 @@ real :: rhom1, rhom2
 
 real :: frac
 
-real :: pin
-
 logical ::have_green_funcs
 !*
 !************************************************************      
-!  Initialize MPI
-!call mpi_init(ierror)
 
 ! set the default data sizes for MPI communications
 REAL_SIZE = 8
@@ -89,7 +82,6 @@ call cpu_time(time1)
 
 ! Initialize local variables
 pe_coord = 0
-ierror = 0
 
 !  Set up logical and integer variables that describe the
 !  processor grid and the message passing pattern
@@ -101,7 +93,6 @@ iam_on_edge = .false.
 iam_root = .false.
 root = 0
 
-!call mpi_comm_rank(MPI_COMM_WORLD, iam, ierror)
 iam = 0
 numprocs = numr_procs * numz_procs
 if( iam == 0 ) iam_root = .true.
@@ -198,7 +189,7 @@ column_num = pe_coord(iam+1,1)
 call setup( have_green_funcs )
  have_green_funcs = .true.
 call cpu_time(time2)
-
+ have_green_funcs = .true.
 if ( iam_root ) then
    write(*,*) ' setup done in time: ', time2 - time1
 endif
@@ -223,18 +214,15 @@ do I = first_model, last_model
    call binary_initialize(rhom1, rhom2, ra, rb, rc, phia, phib, phic, &
                             za,  zb, zc, initial_model_type)
 print*, "Finished initialize"
-   call binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, &
-                   pin, qfinal)
+   call binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, qfinal)
 
    write(*,*) 'Finished Model: ', I
-   write(*,*) model_number, ra, rb, rc, initial_model_type, rhom1, rhom2, pin, frac
+   write(*,*) model_number, ra, rb, rc, initial_model_type, rhom1, rhom2, frac
 
 enddo
 
 close(20)
 
-!  Clean up after MPI
-!call mpi_finalize(ierror)
 
 stop
 end program main

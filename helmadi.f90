@@ -50,9 +50,8 @@ real, dimension(numr) :: rhf_g, r_g, rhfinv_g, rinv_g
 real, dimension(numz) :: zhf_g
 common /global_grid/ rhf_g, r_g, rhfinv_g, rinv_g, zhf_g
 
-integer :: isym
 integer, dimension(3) :: boundary_condition
-common /boundary_conditions/ isym, boundary_condition
+common /boundary_conditions/ boundary_condition
 
 logical :: iam_on_top, iam_on_bottom, iam_on_axis,               &
            iam_on_edge, iam_root

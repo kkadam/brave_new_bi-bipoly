@@ -13,10 +13,10 @@ include 'pot.h'
 !  bessel calculates the boundary values of the gravitational
 !  potential at
 ! 
-!  -> top surface, K = numz_dd for all J and L for pes on
+!  -> top surface, K = numz for all J and L for pes on
 !                  top of the grid
 !
-!  -> side surface, J = numr_dd for all K and L for pes on
+!  -> side surface, J = numr for all K and L for pes on
 !                   side of the grid
 !
 !  -> bottom surface if isym = 1 (no assumed symmetry), K =1
@@ -33,14 +33,14 @@ include 'pot.h'
 !*
 !*  Global Variables
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr_dd,numz_dd,numphi) :: potp, rhop
+real, dimension(numr,numz,numphi) :: potp, rhop
 common /potarrays/ potp, rhop
 
-real, dimension(numr_dd,numz_dd,numr,mmax) :: tmr
-real, dimension(numr_dd,numz_dd,numz,mmax) :: smz
+real, dimension(numr,numz,numr,mmax) :: tmr
+real, dimension(numr,numz,numz,mmax) :: smz
 common /green_functions/ tmr, smz
 
 real, dimension(numphi,mmax) :: bes_cos, bes_sin
@@ -73,29 +73,29 @@ common /processor_grid/ iam, iam_on_top,                     &
 !*
 !*  Local Variables
 
-real, dimension(numr_dd,numz_dd) :: TMPC, TMPS
+real, dimension(numr,numz) :: TMPC, TMPS
 
-real, dimension(numr_dd,numphi) :: phitTMP, pott, phitTMPC,            &
+real, dimension(numr,numphi) :: phitTMP, pott, phitTMPC,            &
                                    phitTMPS
 
-real, dimension(numz_dd,numphi) :: phisTMP, pots, phisTMPC,            &
+real, dimension(numz,numphi) :: phisTMP, pots, phisTMPC,            &
                                    phisTMPS
 
 real, dimension(numr,mmax) :: StC, StS
 
 real, dimension(numz,mmax) :: SsC, SsS
 
-real, dimension(numr_dd,mmax) :: sum_top_C, sum_top_S
+real, dimension(numr,mmax) :: sum_top_C, sum_top_S
 
-real, dimension(numz_dd,mmax) :: sum_sid_C, sum_sid_S
+real, dimension(numz,mmax) :: sum_sid_C, sum_sid_S
 
-real, dimension(numr_dd-2,mmax) :: t_buff_C, t_buff_S
+real, dimension(numr-2,mmax) :: t_buff_C, t_buff_S
 
-real, dimension(numr_dd-2,mmax) :: t_buff_C_summed, t_buff_S_summed
+real, dimension(numr-2,mmax) :: t_buff_C_summed, t_buff_S_summed
 
-real, dimension(numz_dd-2,mmax) :: s_buff_C, s_buff_S
+real, dimension(numz-2,mmax) :: s_buff_C, s_buff_S
 
-real, dimension(numz_dd-2,mmax) :: s_buff_C_summed, s_buff_S_summed
+real, dimension(numz-2,mmax) :: s_buff_C_summed, s_buff_S_summed
 
 real :: factor
 
@@ -214,14 +214,14 @@ enddo
 ! always have to communicate top values
 !  count through pes on top of pe grid from
 !  left to right
-message_length = (numr_dd-2)*mmax
+message_length = (numr-2)*mmax
 lwrb = 2
-uprb = numr_dd - 1
+uprb = numr - 1
 !do I = numprocs - numr_procs, numprocs - 1
 !do I = 0,0
    do M = 1, mmax
       counter = lwrb
-      do J = 1, numr_dd - 2
+      do J = 1, numr - 2
          t_buff_C(J,M) = StC(counter,M)
          t_buff_S(J,M) = StS(counter,M)
          counter = counter + 1
@@ -232,7 +232,7 @@ uprb = numr_dd - 1
    t_buff_S_summed = t_buff_S
    if( iam == I ) then
       do M = 1, mmax
-         do J = 1, numr_dd - 2
+         do J = 1, numr - 2
             sum_top_C(J+1,M) = t_buff_C_summed(J,M)
             sum_top_S(J+1,M) = t_buff_S_summed(J,M)
 !            print*,2
@@ -240,43 +240,36 @@ uprb = numr_dd - 1
       enddo
    endif
    lwrb = uprb + 1
-   uprb = lwrb + numr_dd - 3
+   uprb = lwrb + numr - 3
 !enddo
 
 ! communicate the side values
 !  count through pes on outer edge of pe grid
 !  from bottom to top
-message_length = (numz_dd-2) * mmax
+message_length = (numz-2) * mmax
 lwrb = 2
-uprb = numz_dd - 1
-!do I = numr_procs - 1, numprocs - 1, numr_procs
-print*,"PRE LOOP"
-!do I= 0,0
+uprb = numz - 1
    do M = 1, mmax
       counter = lwrb
-      do K = 1, numz_dd - 2
+      do K = 1, numz - 2
          s_buff_C(K,M) = SsC(counter,M)
          s_buff_S(K,M) = SsS(counter,M)
          counter = counter + 1
-!         print*,3
       enddo
    enddo
    s_buff_C_summed = s_buff_C
    s_buff_S_summed = s_buff_S
    if( iam == I ) then
       do M = 1, mmax
-         do K = 1, numz_dd - 2
+         do K = 1, numz - 2
             sum_sid_C(K+1,M) = s_buff_C_summed(K,M)
             sum_sid_S(K+1,M) = s_buff_S_summed(K,M)
-!            print*,4
          enddo
       enddo
    endif
    lwrb = uprb + 1
-   uprb = lwrb + numz_dd - 3
-!enddo
+   uprb = lwrb + numz - 3
 
-print*,"POST LOOP"
 ! if on top of the pe grid reduce the convolution
 ! of G(r|r') with rho to a potential at the
 ! top of the grid
@@ -309,7 +302,7 @@ if( iam_on_top ) then
          enddo
       endif
    endif
-   potp(:,numz_dd,:) = pott
+   potp(:,numz,:) = pott
 endif     ! done calculating top boundary potential
 
 ! if on edge of the pe grid reduce the convolution
@@ -337,7 +330,7 @@ if( iam_on_edge ) then
    if( iam_on_bottom .and. (isym /= 1) ) then
       pots(1,:) = pots(2,:)
    endif
-   potp(numr_dd,:,:) = pots
+   potp(numr,:,:) = pots
 endif      ! done calculating side boundary potential
 
 return

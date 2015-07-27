@@ -11,7 +11,7 @@ include 'runscf.h'
 !*
 !*  Global Variables
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
 real :: dr, dz, dphi, drinv, dzinv, dphiinv

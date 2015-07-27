@@ -2,7 +2,7 @@ subroutine binary_sum(temp, ret1, ret2)
 implicit none
 include 'runscf.h'
 
-real, intent(in), dimension(numr_dd,numz_dd,numphi) :: temp
+real, intent(in), dimension(numr,numz,numphi) :: temp
 real, intent(out) :: ret1, ret2
 
 integer :: I, J, K

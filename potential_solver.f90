@@ -15,10 +15,10 @@ include 'runscf.h'
 !*
 !*   Global Variables
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr_dd,numz_dd,numphi) :: potp, rhop
+real, dimension(numr,numz,numphi) :: potp, rhop
 common /potarrays/ potp, rhop
 
 real :: dt, time, dt_visc

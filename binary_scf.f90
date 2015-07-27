@@ -21,11 +21,11 @@ integer, intent(out) :: qfinal
 !   global varaibles
 !
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr_dd) :: r, rhf, rinv, rhfinv
-real, dimension(numz_dd) :: zhf
+real, dimension(numr) :: r, rhf, rinv, rhfinv
+real, dimension(numz) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 
@@ -55,7 +55,7 @@ common /processor_grid/ iam, iam_on_top,           &
                         row_num, iam_root,          &
                         REAL_SIZE, INT_SIZE
 
-real, dimension(numr_dd,numz_dd,numphi) :: pres
+real, dimension(numr,numz,numphi) :: pres
 
 !
 !**************************************************************************************************
@@ -63,9 +63,9 @@ real, dimension(numr_dd,numz_dd,numphi) :: pres
 !    local variables
 !
 
-real, dimension(numr_dd, numz_dd, numphi) :: h, pot_it, pot_old, temp
+real, dimension(numr, numz, numphi) :: h, pot_it, pot_old, temp
 
-real, dimension(numr_dd, numphi) :: psi
+real, dimension(numr, numphi) :: psi
 
 real, dimension(maxit) :: c1, c2, mass1, mass2, omsq, hm1, hm2, cc1, cc2, &
                             mass_c1, mass_c2, hem1, hem2

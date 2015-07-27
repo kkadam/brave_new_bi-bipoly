@@ -31,11 +31,11 @@ integer, intent(in) :: initial_model_type
 !  global variables
 !
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
-real, dimension(numz_dd) :: zhf
+real, dimension(numr) :: rhf, r, rhfinv, rinv
+real, dimension(numz) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 

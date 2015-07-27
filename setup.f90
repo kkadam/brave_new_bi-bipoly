@@ -18,14 +18,14 @@ logical, intent(in) :: have_green_funcs
 !*
 !*   Global variables
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
 real :: dr, dz, dphi, drinv, dzinv, dphiinv
 common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
 
-real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
-real, dimension(numz_dd) :: zhf
+real, dimension(numr) :: rhf, r, rhfinv, rinv
+real, dimension(numz) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 
@@ -94,7 +94,7 @@ dphiinv = 1.0 / dphi
 !  define r array on every processor, use temp here to avoid 
 !  coercions from integer to floating types
 x = 1.0
-offset = column_num*(numr_dd-2)*dr
+offset = column_num*(numr-2)*dr
 do J = rlwb-1,rupb+1
    r(J) = offset + (x - 2.0)*dr
    x = x + 1.0
@@ -118,13 +118,13 @@ rhfinv = 1.0/rhf
 ! setup the local zhf array
 x = 1.0
 if( isym /= 1 ) then
-   offset = row_num * (numz_dd-2) * dz
+   offset = row_num * (numz-2) * dz
    do K = zlwb-1, zupb+1
       zhf(K) = offset + (x-1.5)*dz
       x = x + 1.0
    enddo
 else
-   offset = (row_num*(numz_dd-2) - numz/2)*dz
+   offset = (row_num*(numz-2) - numz/2)*dz
    do K = zlwb-1,zupb+1
       zhf(K) = offset + (x - 0.5)*dz
       x = x + 1.0

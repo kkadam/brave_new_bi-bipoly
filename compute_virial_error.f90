@@ -7,9 +7,9 @@ include 'runscf.h'
 !  subroutine arguments
 !
 
-real, dimension(numr_dd, numphi), intent(in) :: psi
+real, dimension(numr, numphi), intent(in) :: psi
 
-real, dimension(numr_dd,numz_dd,numphi) :: h
+real, dimension(numr,numz,numphi) :: h
 
 real, intent(in) :: omega, rho_1d, rho_2e
 
@@ -27,11 +27,11 @@ real, intent(out) :: virial_error
 !  global variables
 !
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
-real, dimension(numz_dd) :: zhf
+real, dimension(numr) :: rhf, r, rhfinv, rinv
+real, dimension(numz) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 
@@ -60,7 +60,7 @@ common /processor_grid/ iam, iam_on_top,           &
 ! local variables
 !
 
-real, dimension(numr_dd,numz_dd,numphi) :: temp
+real, dimension(numr,numz,numphi) :: temp
 
 real :: w1,  w2, wtot
 

@@ -21,15 +21,15 @@ include 'pot.h'
 !*
 !*  Subroutine Arguments
 
-       real, dimension(numr_dd,numz_dd,numr,mmax) :: tmr
+       real, dimension(numr,numz,numr,mmax) :: tmr
 
 !*
 !****************************************************************
 !*
 !* Global Variables
 
-real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
-real, dimension(numz_dd) :: zhf
+real, dimension(numr) :: rhf, r, rhfinv, rinv
+real, dimension(numz) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 

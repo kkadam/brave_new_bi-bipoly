@@ -12,9 +12,9 @@ include 'runscf.h'
 
 real, dimension(maxit), intent(in) :: c1, c2, omsq, hm1, hm2, mass1, mass2
 
-real, dimension(numr_dd, numphi), intent(in) :: psi
+real, dimension(numr, numphi), intent(in) :: psi
 
-real, dimension(numr_dd,numz_dd,numphi) :: h
+real, dimension(numr,numz,numphi) :: h
 
 integer, intent(in) :: qfinal
 
@@ -45,11 +45,11 @@ real, intent(in) :: volume_factor
 !  global variables
 !
 
-real, dimension(numr_dd,numz_dd,numphi) :: pot, rho
+real, dimension(numr,numz,numphi) :: pot, rho
 common /poisson/ pot, rho
 
-real, dimension(numr_dd) :: rhf, r, rhfinv, rinv
-real, dimension(numz_dd) :: zhf
+real, dimension(numr) :: rhf, r, rhfinv, rinv
+real, dimension(numz) :: zhf
 real, dimension(numphi) :: phi
 common /grid/ rhf, r, rhfinv, rinv, zhf, phi
 
@@ -81,9 +81,9 @@ common /processor_grid/ iam, iam_on_top,           &
 ! locall variables
 !
 
-real, dimension(numr_dd,numz_dd,numphi) :: rchpot
+real, dimension(numr,numz,numphi) :: rchpot
 
-real, dimension(numr_dd,numz_dd,numphi) :: temp
+real, dimension(numr,numz,numphi) :: temp
 
 real :: gamma
 

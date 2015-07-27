@@ -1,7 +1,7 @@
 subroutine compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
 implicit none
 include 'runscf.h'
-  real, dimension(numr_dd,numz_dd,numphi) :: rho, pres
+  real, dimension(numr,numz,numphi) :: rho, pres
   real :: rho_c1d, rho_1d, rho_c2e, rho_2e
   real :: gammac1, gammac2, gammae1,gammae2
   real :: kappac1,kappac2, kappae1,kappae2

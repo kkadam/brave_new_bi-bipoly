@@ -497,7 +497,6 @@ do I = rlwb, rupb
    endif
 enddo
 
-if ( iam_root ) then
 
    write(model_file,'(a,i6)') trim(model_template), model_number
    open(unit=11, file=trim(model_file),form='formatted',status='unknown')
@@ -581,6 +580,5 @@ if ( iam_root ) then
    write(11,*)
    close(11)
 
-endif
 
 end subroutine ancient_output

@@ -100,8 +100,6 @@ integer :: ra_pe, rb_pe, rc_pe
 
 logical :: i_have_ra, i_have_rb, i_have_rc
 
-integer :: ra_local_index, rb_local_index, rc_local_index
-
 real :: temp_hm1, temp_hm2
 
 real, dimension(3) :: rhm1, rhm2, temp_rhm1, temp_rhm2
@@ -168,41 +166,7 @@ div_it=20
 
 
 i_have_ra = .false.
-ra_local_index = 0
 ra_pe = 0
-
-if ( iam_on_bottom ) then
-   do I = rlwb, rupb
-      if ( abs(rhf_g(ra) - rhf(I)) < 0.1 * dr ) then
-         i_have_ra = .true.
-         ra_local_index = I
-      endif
-   enddo
-endif
-
-
-i_have_rb = .false.
-if ( iam_on_bottom ) then
-   do I = rlwb, rupb
-      if ( abs(rhf_g(rb) - rhf(I)) < 0.1 * dr ) then
-         i_have_rb = .true.
-         rb_local_index = I
-      endif
-   enddo
-endif
-
-
-
-i_have_rc = .false.
-if ( iam_on_bottom ) then
-   do I = rlwb, rupb
-         if ( abs(rhf_g(rc) - rhf(I)) < 0.1 * dr ) then
-          i_have_rc = .true.
-          rc_local_index = I
-        endif
-   enddo
-endif
-
 
 volume_factor = 2.0 * dr * dz * dphi
   rmax = numr - 8
@@ -258,14 +222,10 @@ separation = xavg1 - xavg2
 com = separation * mass2(1) / ( mass1(1) + mass2(1) )
 com = xavg1 - com
 
-if ( iam_root ) then
    open(unit=13,file='iteration_log',form='formatted',status='unknown',position='append')
-   write(13,*) iam, 1, mass1(1), mass2(1), xavg1, xavg2, com, separation
-endif
+   write(13,*)  1, mass1(1), mass2(1), xavg1, xavg2, com, separation
 
-if ( iam_root ) then
    open(unit=12,file='convergence_log',form='formatted',status='unknown')
-endif
 
 
 
@@ -571,18 +531,14 @@ rho_cc2=0.0
 
 
    ! impose the equatorial boundary condition
-   if ( iam_on_bottom ) then
       do K = philwb, phiupb
          do I = rlwb, rupb
             rho(I,zlwb-1,K) = rho(I,zlwb,K)
          enddo
       enddo
-   endif
 
    ! impose the axial boundary condition
-   if ( iam_on_axis ) then
       rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
-   endif
 
 
    ! has the solution converged?
@@ -742,7 +698,6 @@ write (char6, "(F10.7)") rho_cc1
 write (char7, "(F10.7)") rho_cc2
 write (char8, "(F10.7)") virial_error
 
-   if ( iam_root ) then
        print*, "mass ratio = ", "m1/m2=",mass1(Q)/mass2(Q),"or m2/m1=",mass2(Q)/mass1(Q)
        print*, "core mass ratio 1 = ", mass_c1(Q)/mass1(Q)
        print*, "core mass ratio 2 = ", mass_c2(Q)/mass2(Q)
@@ -756,7 +711,6 @@ write (char8, "(F10.7)") virial_error
       write(13,*)  "rho_2e", rho_2e, "rho_c2e", rho_c2e
 
        write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char8)
-   endif
 
 ! Finished printing stuff ^^
 
@@ -878,9 +832,7 @@ enddo
           pres_e = pres(re,ze,phie)
  
  
-if ( iam_root ) then
-!   write(13,*) iam, 'Model: ', model_number, ' done in time: ', time2 - time1
-endif
+!   write(13,*) 'Model: ', model_number, ' done in time: ', time2 - time1
 
   call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
             qfinal, initial_model_type, model_number, ra, za, phia,          &
@@ -905,10 +857,8 @@ call output('pressure.bin','pres',pres)
 
 !call cpu_time(time2)
 
-!if ( iam_root ) then
-!   write(13,*) iam, 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
+!   write(13,*) 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
 !   close(13)
 !   close(12)
-!endif
 
 end subroutine binary_scf

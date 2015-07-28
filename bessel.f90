@@ -230,7 +230,7 @@ uprb = numr - 1
    enddo
    t_buff_C_summed = t_buff_C
    t_buff_S_summed = t_buff_S
-   if( iam == I ) then
+!   if( iam == I ) then
       do M = 1, mmax
          do J = 1, numr - 2
             sum_top_C(J+1,M) = t_buff_C_summed(J,M)
@@ -238,7 +238,7 @@ uprb = numr - 1
 !            print*,2
          enddo
       enddo
-   endif
+!   endif
    lwrb = uprb + 1
    uprb = lwrb + numr - 3
 !enddo
@@ -259,21 +259,20 @@ uprb = numz - 1
    enddo
    s_buff_C_summed = s_buff_C
    s_buff_S_summed = s_buff_S
-   if( iam == I ) then
+!   if( iam == I ) then
       do M = 1, mmax
          do K = 1, numz - 2
             sum_sid_C(K+1,M) = s_buff_C_summed(K,M)
             sum_sid_S(K+1,M) = s_buff_S_summed(K,M)
          enddo
       enddo
-   endif
+!   endif
    lwrb = uprb + 1
    uprb = lwrb + numz - 3
 
 ! if on top of the pe grid reduce the convolution
 ! of G(r|r') with rho to a potential at the
 ! top of the grid
-if( iam_on_top ) then
    do L = philwb, phiupb
       do J = rlwb, rupb
          phitTMP(J,L) = sum_top_C(J,1)
@@ -292,7 +291,7 @@ if( iam_on_top ) then
       enddo
    enddo
    pott(rlwb:rupb,:) = factor * phitTMP(rlwb:rupb,:)
-   if( iam_on_axis ) then
+
       if( isym == 3 ) then
          pott(1,:) = pott(2,:)
       else
@@ -301,14 +300,14 @@ if( iam_on_top ) then
             pott(1,L+numphi_by_two) = pott(2,L)
          enddo
       endif
-   endif
+
    potp(:,numz,:) = pott
-endif     ! done calculating top boundary potential
+     ! done calculating top boundary potential
 
 ! if on edge of the pe grid reduce the convolution
 ! of G(r|r') with rho to a potential at the
 ! outer edge of the grid
-if( iam_on_edge ) then
+
    do L = philwb, phiupb
       do K = zlwb, zupb
          phisTMP(K,L) = sum_sid_C(K,1)
@@ -327,11 +326,11 @@ if( iam_on_edge ) then
      enddo
    enddo
    pots(zlwb:zupb,:) = factor*phisTMP(zlwb:zupb,:)
-   if( iam_on_bottom .and. (isym /= 1) ) then
+   if( (isym /= 1) ) then
       pots(1,:) = pots(2,:)
    endif
    potp(numr,:,:) = pots
-endif      ! done calculating side boundary potential
+  ! done calculating side boundary potential
 
 return
 end subroutine bessel

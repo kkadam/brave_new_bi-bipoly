@@ -210,7 +210,7 @@ do I = 1, nsteps
 
    knownr = 0.0
 
-   if( iam_on_bottom .and. isym /= 1 ) then
+   if( isym /= 1 ) then
       !  the conditional looks a little stange, here is the deal...
       !  in this data decomposition, the vertical index is block
       !  distributed across numz_procs, for the global K index of
@@ -289,7 +289,7 @@ do I = 1, nsteps
 
    knownz = 0.0
 
-   if( iam_on_bottom ) then
+
       ! now the special case is independent of isym and exists for
       ! the global radial index J = 2.  We have swapped having all
       ! J values in local memory to having all K values in local 
@@ -317,18 +317,6 @@ do I = 1, nsteps
                               alphaz(J)*potz(J+1,K,L)
          enddo
       enddo
-   else
-      do L = 1, numphi
-         do K = 2, numz-1
-            do J = 2, numr-1
-               knownz(J,K,L) = - four_pi * rhoz(J,K,L) +        &
-                                 elambdaz(J,L)*potz(J,K,L) -    &
-                                 alphaz(J)*potz(J+1,K,L) -      &
-                                 betaz(J)*potz(J-1,K,L)
-            enddo
-         enddo
-      enddo
-   endif
 
    ! add boundary potential at top and (if isym = 1)
    ! bottom of the grid to knownz
@@ -415,7 +403,6 @@ enddo
 
 ! impose boundary conditions on the potential across the
 ! z axis and across the equatorial plane
-if( iam_on_axis ) then
    if( isym == 3 ) then
       potp(1,:,:) = potp(2,:,:)
    else
@@ -424,13 +411,10 @@ if( iam_on_axis ) then
          potp(1,:,L+numphi_by_two) = potp(2,:,L)
       enddo
    endif
-endif
 
-if( iam_on_bottom ) then
    if( isym == 2 .or. isym == 3 ) then
       potp(:,1,:) = potp(:,2,:)
    endif
-endif
 
 ! fill in guard cells with the potential from neighbors
 !call comm(potp)

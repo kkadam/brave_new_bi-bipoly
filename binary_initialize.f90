@@ -272,14 +272,10 @@ select case(initial_model_type)
 end select
 
 ! impose equatorial boundary condition
-if ( iam_on_bottom ) then
    rho(:,zlwb-1,:) = rho(:,zlwb,:)
-endif
 
 ! impose the axial boundary condition
-if ( iam_on_axis ) then
    rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
-endif
 
 !call comm(rho)
 

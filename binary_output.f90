@@ -696,7 +696,7 @@ else
 endif
 
 close(11)
-	 
+
 print*, "File ", trim(model_file), " printed"
 
 rho1i = (rho_1d+rho_c1d)/2.0

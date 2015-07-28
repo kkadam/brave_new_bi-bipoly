@@ -83,15 +83,10 @@ call cpu_time(time1)
 !  Set up logical and integer variables that describe the
 !  processor grid and the message passing pattern
 
-iam_on_top = .false.
-iam_on_bottom = .false.
-iam_on_axis = .false.
-iam_on_edge = .false.
-iam_root = .false.
 root = 0
 
 iam = 0
-if( iam == 0 ) iam_root = .true.
+iam_root = .true.
 
 !  Make sure the input data in runhdro.h doesn't violate
 !  assumptions made in the code implementaion.  If there
@@ -139,46 +134,15 @@ iam_on_bottom = .true.
 
  iam_on_edge = .true. 
 
-!  Determine passing partners for comm and related routines
-if( iam_on_top ) then
-   up_neighbor = -1
-else
-   up_neighbor = iam + 1
-endif
-
-if( iam_on_bottom ) then
-   down_neighbor = -1
-else
-   down_neighbor = iam - 1
-endif
-
-if( iam_on_axis ) then
-   in_neighbor = -1
-else
-   in_neighbor = iam - 1
-endif
-
-if( iam_on_edge ) then
-   out_neighbor = -1
-else
-   out_neighbor = iam + 1
-endif
-
 !  Determine whether pe is in an even row or column to order
 !  message passing
 row_num = 0
- 
 column_num = 0
 
-
- have_green_funcs = .true.
+have_green_funcs = .true.
 call setup( have_green_funcs )
- have_green_funcs = .true.
 call cpu_time(time2)
- have_green_funcs = .true.
-if ( iam_root ) then
    write(*,*) ' setup done in time: ', time2 - time1
-endif
 
 
 open(unit=20, file='init', form='formatted', status='old')

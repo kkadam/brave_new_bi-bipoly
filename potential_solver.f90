@@ -60,13 +60,9 @@ rhop = rho
 ! need to zero out sections of rhop to avoid problems
 ! with material piling up in the boundary zones for
 ! the dirichlet boundary conditions
-if( iam_on_top ) then
    rhop(:,zupb:zupb+1,:) = 0.0
-endif
-if( iam_on_edge ) then
    rhop(rupb:rupb+1,:,:) = 0.0
-endif
-if( iam_on_bottom .and. (isym == 1) ) then
+if (isym == 1) then
    rhop(:,zlwb-1:zlwb,:) = 0.0
 endif
 

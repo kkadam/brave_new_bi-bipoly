@@ -28,21 +28,6 @@ common /timestep/ dt, time, dt_visc, tstep
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ boundary_condition
 
-logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
-           iam_on_edge, iam_root
-integer :: column_num, row_num
-integer :: iam, down_neighbor, up_neighbor,                  &
-           in_neighbor, out_neighbor, root,                  &
-           REAL_SIZE, INT_SIZE
-
-common /processor_grid/ iam, iam_on_top,           &
-                        iam_on_bottom, iam_on_axis,          &
-                        iam_on_edge, down_neighbor,          &
-                        up_neighbor, in_neighbor,            &
-                        out_neighbor, root, column_num,      &
-                        row_num, iam_root,          &
-                        REAL_SIZE, INT_SIZE
-
 !*
 !*************************************************************
 !*

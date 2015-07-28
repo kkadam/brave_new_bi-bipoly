@@ -53,21 +53,6 @@ common /coord_differentials/ dr, dz, dphi,                             &
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ boundary_condition
 
-logical :: iam_on_top, iam_on_bottom, iam_on_axis,                     &
-           iam_on_edge, iam_root
-integer :: column_num, row_num
-integer :: iam, down_neighbor, up_neighbor,                            &
-           in_neighbor, out_neighbor, root,                            &
-           REAL_SIZE, INT_SIZE
-
-common /processor_grid/ iam, iam_on_top,                     &
-                        iam_on_bottom, iam_on_axis,                    &
-                        iam_on_edge, down_neighbor,                    &
-                        up_neighbor, in_neighbor,                      &
-                        out_neighbor, root, column_num,                &
-                        row_num, iam_root,                    &
-                        REAL_SIZE, INT_SIZE
-
 !*
 !****************************************************************
 !*
@@ -101,7 +86,7 @@ real :: factor
 
 integer :: J, K, L, M, lwrb, uprb, counter, rindex, zindex
 
-integer :: I, message_length
+integer :: I
 
 !*
 !****************************************************************
@@ -134,7 +119,6 @@ s_buff_S = 0.0
 s_buff_S_summed = 0.0
 lwrb = 0
 uprb = 0
-message_length = 0
 counter = 0
 
 !  factor is the common multiplier for converting summation of
@@ -207,46 +191,29 @@ do M = 2, mmax
    enddo
 enddo
 
-!  need to communicate these partial sums, result has to land on the
-!  pe with the appropriate range in the global coordinate index
-!  (third index for tmr and smz)
-
-! always have to communicate top values
-!  count through pes on top of pe grid from
-!  left to right
-message_length = (numr-2)*mmax
 lwrb = 2
 uprb = numr - 1
-!do I = numprocs - numr_procs, numprocs - 1
-!do I = 0,0
+
    do M = 1, mmax
       counter = lwrb
       do J = 1, numr - 2
          t_buff_C(J,M) = StC(counter,M)
          t_buff_S(J,M) = StS(counter,M)
          counter = counter + 1
-!         print*,1
       enddo
    enddo
    t_buff_C_summed = t_buff_C
    t_buff_S_summed = t_buff_S
-!   if( iam == I ) then
+
       do M = 1, mmax
          do J = 1, numr - 2
             sum_top_C(J+1,M) = t_buff_C_summed(J,M)
             sum_top_S(J+1,M) = t_buff_S_summed(J,M)
-!            print*,2
          enddo
       enddo
-!   endif
    lwrb = uprb + 1
    uprb = lwrb + numr - 3
-!enddo
 
-! communicate the side values
-!  count through pes on outer edge of pe grid
-!  from bottom to top
-message_length = (numz-2) * mmax
 lwrb = 2
 uprb = numz - 1
    do M = 1, mmax
@@ -259,14 +226,14 @@ uprb = numz - 1
    enddo
    s_buff_C_summed = s_buff_C
    s_buff_S_summed = s_buff_S
-!   if( iam == I ) then
+
       do M = 1, mmax
          do K = 1, numz - 2
             sum_sid_C(K+1,M) = s_buff_C_summed(K,M)
             sum_sid_S(K+1,M) = s_buff_S_summed(K,M)
          enddo
       enddo
-!   endif
+
    lwrb = uprb + 1
    uprb = lwrb + numz - 3
 

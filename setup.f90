@@ -39,21 +39,6 @@ common /trig/ cosine, sine
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ boundary_condition
 
-logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
-           iam_on_edge, iam_root
-integer :: column_num, row_num
-integer :: iam, down_neighbor, up_neighbor,                  &
-           in_neighbor, out_neighbor, root,                  &
-           REAL_SIZE, INT_SIZE
-
-common /processor_grid/ iam, iam_on_top,           &
-                        iam_on_bottom, iam_on_axis,          &
-                        iam_on_edge, down_neighbor,          &
-                        up_neighbor, in_neighbor,            &
-                        out_neighbor, root, column_num,      &
-                        row_num, iam_root,          &
-                        REAL_SIZE, INT_SIZE
-
 !*
 !*********************************************************************************
 !*
@@ -94,7 +79,7 @@ dphiinv = 1.0 / dphi
 !  define r array on every processor, use temp here to avoid 
 !  coercions from integer to floating types
 x = 1.0
-offset = column_num*(numr-2)*dr
+offset = 0
 do J = rlwb-1,rupb+1
    r(J) = offset + (x - 2.0)*dr
    x = x + 1.0
@@ -118,13 +103,13 @@ rhfinv = 1.0/rhf
 ! setup the local zhf array
 x = 1.0
 if( isym /= 1 ) then
-   offset = row_num * (numz-2) * dz
+   offset = 0
    do K = zlwb-1, zupb+1
       zhf(K) = offset + (x-1.5)*dz
       x = x + 1.0
    enddo
 else
-   offset = (row_num*(numz-2) - numz/2)*dz
+   offset = (0*(numz-2) - numz/2)*dz
    do K = zlwb-1,zupb+1
       zhf(K) = offset + (x - 0.5)*dz
       x = x + 1.0

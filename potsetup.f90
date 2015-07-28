@@ -66,21 +66,6 @@ common /global_grid/ rhf_g, r_g, rhfinv_g, rinv_g, zhf_g
 integer, dimension(3) :: boundary_condition
 common /boundary_conditions/ boundary_condition
 
-logical :: iam_on_top, iam_on_bottom, iam_on_axis,           &
-           iam_on_edge, iam_root
-integer :: column_num, row_num
-integer :: iam, down_neighbor, up_neighbor,                  &
-           in_neighbor, out_neighbor, root,                  &
-           REAL_SIZE, INT_SIZE
-
-common /processor_grid/ iam, iam_on_top,           &
-                        iam_on_bottom, iam_on_axis,          &
-                        iam_on_edge, down_neighbor,          &
-                        up_neighbor, in_neighbor,            &
-                        out_neighbor, root, column_num,      &
-                        row_num, iam_root,          &
-                        REAL_SIZE, INT_SIZE
-
 !*
 !********************************************************************
 !*
@@ -171,7 +156,7 @@ drinv2 = drinv * drinv
 dphiinv2 = dphiinv * dphiinv
 
 lstop = numphi_by_two + 1
-loffset = column_num * numphi
+loffset = 0
 do L = 1, numphi
    if( isym == 3 ) then
       if( L + loffset <= lstop ) then
@@ -201,7 +186,7 @@ enddo
 ! have to used indexed global radius array to initialize 
 ! alphaz and betaz because they will be used when the radial
 ! data is block distributed across numz_procs
-index = 2 + row_num * (numr-2)
+index = 2 
 do J = 2, numr-1
 
    alphaz(J) = -r_g(index+1)*rhfinv_g(index)*drinv2
@@ -246,7 +231,7 @@ enddo
 if( isym /= 1 ) bzb(2) = gamma
 
 do L = 1, numphi
-   index = 2 + row_num * (numr-2)
+   index = 2 
    do J = 2, numr-1
       elambdazb(J,L) = -2.0*drinv2 + 2.0*(elm(L)-1.0)*             &
                         dphiinv2*rhfinv_g(index)*                  &
@@ -254,14 +239,14 @@ do L = 1, numphi
       index = index + 1
    enddo
 enddo
-if( isym == 3 .and. row_num == 0 ) then
+if( isym == 3 ) then
    do L = 1, numphi
       elambdazb(2,L) = alphaz(2) + 2.0*betaz(2) + 2.0*             &
                        (elm(L)-1.0)*dphiinv2*rhfinv_g(2)*          &
                        rhfinv_g(2)
    enddo
 endif
-if( isym /= 3 .and. row_num == 0 ) then
+if( isym /= 3 ) then
    do L = 1, numphi
       elambdazb(2,L) = alphaz(2) - (m1mode(L)-1.0)*betaz(2) +      &
                        2.0*(elm(L)-1.0)*dphiinv2*rhfinv_g(2)*      &

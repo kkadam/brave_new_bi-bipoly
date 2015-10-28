@@ -1,8 +1,8 @@
-subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, rhom2, frac, qfinal)
-implicit none
-include 'runscf.h'
-!include 'mpif.h'
-!**************************************************************************************************
+subroutine binary_scf(model_number, initial_model_type, ra, rb, rc, rd, re, rhom1, &
+                      rhom2, frac, qfinal)
+   implicit none
+   include 'runscf.h'
+!**************************************************************************************
 !
 !  subroutine arguments
 !
@@ -16,7 +16,7 @@ real, intent(in) :: frac
 integer, intent(out) :: qfinal
 
 !
-!**************************************************************************************************
+!**************************************************************************************
 !
 !   global varaibles
 !
@@ -43,12 +43,12 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
 real, dimension(numr,numz,numphi) :: pres
 
 !
-!**************************************************************************************************
+!**************************************************************************************
 !
 !    local variables
 !
 
-real, dimension(numr, numz, numphi) :: h, pot_it, pot_old, temp
+real, dimension(numr, numz, numphi) :: h, pot_it, pot_old, temp, const_map, temp_map
 
 real, dimension(numr, numphi) :: psi
 
@@ -79,11 +79,6 @@ integer :: zb, phib
 integer :: zc, phic
 integer :: zd, phid
 integer :: ze, phie  
-logical :: temp_processor
-
-integer :: ra_pe, rb_pe, rc_pe
-
-logical :: i_have_ra, i_have_rb, i_have_rc
 
 real :: temp_hm1, temp_hm2
 
@@ -109,74 +104,81 @@ integer :: I, J, K, L, Q
   integer :: diac1, diae1, diac2, diae2, ae1, ac1, ae2, ac2
   integer, dimension(1) :: center1, center2
   real :: div
-  integer :: div_flag, div_it
+  integer :: div_flag, div_it, norm_flag
   real :: x
   real, dimension(numphi) :: cos_cc
+  real ::  K_part, Pi_part, W_part
+
 !
-!**************************************************************************************************
+!***********************************************************************************
 
-call cpu_time(time1)
+   call cpu_time(time1)
 
-qfinal = 1
-div=0.02
-div_flag=0
-div_it=20
+! Initialize/ Renitialize arrays/ variables
+   qfinal = 1
+   div=0.02
+   div_flag=0
+   div_it=20
+   norm_flag=1
 
-  
-  x = 0.0
-  do L = philwb, phiupb
-    phi(L) = x * dphi
-    x = x + 1.0
-  enddo
+   volume_factor = 2.0 * dr * dz * dphi
+   rmax = numr !- 8
 
-  do L = 1, numphi
-    cos_cc(L) = cos(phi(L))
- enddo
+   h = 0.0
+   psi = 0.0
 
+   mass1 = 0.0
+   mass2 = 0.0
+   mass_c1=0.0
+   mass_c2=0.0
+   omsq = 0.0
+   hm1 = 0.0
+   hm2 = 0.0
+   hem1 = 0.0
+   hem2 = 0.0
+   c1 = 0.0
+   c2 = 0.0
+   rho_cc1=0.0
+   rho_cc2=0.0
+
+   virial_error = 1.0
+
+   pot_it=0
+   pot_old=0
+   temp=0
+   const_map=0
+   temp_map=0
+
+
+! Initialize phi and z values of boundary points
+   phia = 1
+   phib = 1
+   phic = numphi / 2 + 1
+   phid = 1
+   phie = numphi/2 + 1
+   za = 2
+   zb = 2
+   zc = 2
+   zd = 2
+   ze = 2
+
+
+! Find Gammas
    gammae1 = 1.0 + 1.0/n1
    gammae2 = 1.0 + 1.0/n2
    gammac1 = 1.0 + 1.0/nc1
    gammac2 = 1.0 + 1.0/nc2
 
-  phia = 1
-  phib = 1
-  phic = numphi / 2 + 1
-  phid = 1
-  phie = numphi/2 + 1 
-  za = 2
-  zb = 2
-  zc = 2
-  zd = 2
-  ze = 2
+! Find phi and cos(phi) arrays
+   x = 0.0
+   do L = 1, numphi
+     phi(L) = x * dphi
+     x = x + 1.0
+   enddo
 
-
-i_have_ra = .false.
-ra_pe = 0
-
-volume_factor = 2.0 * dr * dz * dphi
-  rmax = numr - 8
-
-!  Re-Initialize arrays/ variables  
-  h = 0.0
-  psi = 0.0
-
-  qfinal = 1  
-  
-  mass1 = 0.0
-  mass2 = 0.0
-  mass_c1=0.0
-  mass_c2=0.0
-  omsq = 0.0
-  hm1 = 0.0
-  hm2 = 0.0
-  hem1 = 0.0
-  hem2 = 0.0
-  c1 = 0.0
-  c2 = 0.0
-  rho_cc1=0.0
-  rho_cc2=0.0
-
-virial_error = 1.0
+   do L = 1, numphi
+     cos_cc(L) = cos(phi(L))
+   enddo
 
 ! calculate the initial total mass
 do K = philwb, phiupb
@@ -207,65 +209,72 @@ separation = xavg1 - xavg2
 com = separation * mass2(1) / ( mass1(1) + mass2(1) )
 com = xavg1 - com
 
+
+! Open logfiles
    open(unit=13,file='iteration_log',form='formatted',status='unknown',position='append')
    write(13,*)  1, mass1(1), mass2(1), xavg1, xavg2, com, separation
 
    open(unit=12,file='convergence_log',form='formatted',status='unknown')
 
+   open(unit=19,file='virial_log',form='formatted',status='unknown')
 
-
-print*, 'maxit = ', maxit
 
 
 ! START OF THE ITERATION CYCLE
-do Q = 2, maxit-1 
-print*, "================"
-print*, "iteration number = ", Q
-   ! solve the Poisson equation for the current density field
-   if ( Q == 2 ) then
-      call potential_solver(0)
+   print*, 'maxit = ', maxit
+
+   do Q = 2, maxit-1 
+   print*, "================"
+   print*, "iteration number = ", Q
+
+   ! Solve the Poisson equation for the current density field
+      if ( Q == 2 ) then
+         call potential_solver(0)
+         pot_old = pot
+      else
+         call potential_solver(1)
+      endif
+      pot_it = (1.0 - frac) * pot + frac * pot_old
       pot_old = pot
-   else
-      call potential_solver(1)
-   endif
-   pot_it = (1.0 - frac) * pot + frac * pot_old
-   pot_old = pot
 
-   ! compute the form factor for the centrifugal potential
-   do K = philwb, phiupb
-      do I = rlwb-1, rupb+1
-         psi(I,K) = - 0.5 * ( (rhf(I)*cosine(K) - com)**2 + rhf(I)*rhf(I)*sine(K)*sine(K) )
+
+   ! Compute the form factor for the centrifugal potential
+      do K = philwb, phiupb
+         do I = rlwb-1, rupb+1
+            psi(I,K) = - 0.5 * ( (rhf(I)*cosine(K) - com)**2 + rhf(I)*rhf(I)*sine(K)*sine(K) )
+         enddo
       enddo
-   enddo
 
-   ! calculate the angular frequency
-          pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
-          pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
-          pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-          pot_d = pot_it(rd,zd,phid)
-          pot_e = pot_it(re,ze,phie)
+   ! Find pot and psi at the boundary points
+      pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
+      pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
+      pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
+      pot_d = pot_it(rd,zd,phid)
+      pot_e = pot_it(re,ze,phie)
           
-          psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
-          psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
-          psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-          psi_d = psi(rd,phid)
-          psi_e = psi(re,phie)
+      psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
+      psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
+      psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
+      psi_d = psi(rd,phid)
+      psi_e = psi(re,phie)
          
 !print*, pot_a, pot_b, pot_c, pot_d, pot_e
 !print*, psi_a, psi_b, psi_c, psi_d, psi_e 
 
-          omsq(q) = - (pot_a-pot_b)/(psi_a-psi_b)
-          
-          c1(q) = pot_b + omsq(q)*psi_b
-          c2(q) = pot_c + omsq(q)*psi_c
+
+   ! Calculate the angular frequency and envelope c's
+      omsq(q) = - (pot_a-pot_b)/(psi_a-psi_b)
+   
+      c1(q) = pot_b + omsq(q)*psi_b
+      c2(q) = pot_c + omsq(q)*psi_c
        
+
+   ! Calculate the core c's 
           rho_1d = rho(rd,zd,phid)
           rho_c1d=rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
-
-!print*, "rho_1d", rho_1d, "rho_c1d", rho_c1d       
 
           rho_2e = rho(re,ze,phie)
           rho_c2e=rho_2e*muc2/mu2       
@@ -273,16 +282,11 @@ print*, "iteration number = ", Q
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
           cc2(q) = h_c2e + pot_e+ omsq(q)*psi_e       
 
-!print*, "rho_2e", rho_2e, "rho_c2e", rho_c2e
 
-!print*, "rhos", rho_c1d, rho_1d, rho_c2e, rho_2e
-!print*,  omsq(q) 
-!print*,  "cs",c1(q), c2(q),cc1(q),cc2(q)
-
-   ! now compute the new  enthalpy field from the potential and SCF constants
+   ! Now compute the new  enthalpy field from the potential and SCF constants
           do i = 1,phi1+1
-             do j = 2,numz
-                do k = 2,rmax
+             do j = 1,numz
+                do k = 1,rmax
                    if (rho(k,j,i).gt.rho_1d) then
                       h(k,j,i) = cc1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
                    else
@@ -306,8 +310,8 @@ print*, "iteration number = ", Q
              enddo
           enddo
           do i = phi2,phi3+1
-             do j = 2,numz
-                do k = 2,rmax
+             do j = 1,numz
+                do k = 1,rmax
                    if (rho(k,j,i).gt.rho_2e) then
                       h(k,j,i) = cc2(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
                    else
@@ -331,8 +335,8 @@ print*, "iteration number = ", Q
              enddo
           enddo
           do i = phi4,numphi
-             do j = 2,numz
-                do k = 2,rmax
+             do j = 1,numz
+                do k = 1,rmax
                    if (rho(k,j,i).gt.rho_1d) then
                       h(k,j,i) = cc1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
                    else
@@ -355,28 +359,38 @@ print*, "iteration number = ", Q
                 enddo
              enddo
           enddo 
-           
+
+          do i = 1,numphi
+             do j = 1,numz
+                do k = 1,rmax
+                    if (h(k,j,i).lt.0) then
+                       h(k,j,i)=0.0
+                    endif
+                enddo
+             enddo
+          enddo
+
+   
+   ! Calculate normalization constants
           norm1 = mu1/muc1*(h_c1d/hm1(q))**nc1        
           norm2 = mu2/muc2*(h_c2e/hm2(q))**nc2
 
-!print*, "h's",hem1(q), hm1(q)
-!print*,"norms",norm1, norm2 
+   ! Calculate the new density field from the enthalpy
+      rho_cc1=0.0
+      rho_cc2=0.0
 
-rho_cc1=0.0
-rho_cc2=0.0
-   ! calculate the new density field from the enthalpy
           do i = 1,phi1+1
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_1d) then	   
+                      if (rho(k,j,i).gt.rho_1d) then
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
                       else
                          !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
                          rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
                       endif
                    else   
-                      rho(k,j,i) = 0.0	   
+                      rho(k,j,i) = 0.0
                    endif
 
                    if(rho(k,j,i).gt.rho_cc1) then
@@ -387,8 +401,8 @@ rho_cc2=0.0
              enddo
           enddo
           do i = phi2,phi3+1
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
                       if (rho(k,j,i).gt.rho_2e) then
                          rho(k,j,i) = rhom2*(h(k,j,i)/hm2(q))**nc2
@@ -408,8 +422,8 @@ rho_cc2=0.0
              enddo
           enddo
           do i = phi4,numphi
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
                       if (rho(k,j,i).gt.rho_1d) then
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
@@ -429,10 +443,9 @@ rho_cc2=0.0
              enddo
           enddo
 
-!print*, "rho_cc1=", rho_cc1,"rhom1=",rhom1
-!print*, "rho_cc2=", rho_cc2,"rhom2=",rhom2
-
-   ! normalize wrt the central densities of the stars
+   ! Conditionally normalize wrt the central densities of the stars
+      if ( norm_flag == 1 ) then
+          print*, "normalizing "
           do i = 1,phi1+1
              do j = 2,numz
                 do k = 2,numr
@@ -457,41 +470,13 @@ rho_cc2=0.0
                 enddo
              enddo
           enddo
+      endif
 
 !print*, rm1,zm1,phim1
 !print*, rm2,zm2,phim2
 
 
-   ! zero out the density field between the axis and the inner boundary points
-   do K = philwb, phi1+1
-      do J = 1, zupb
-         do I = 1, rupb
-            if ( rhf(I) <= rhf_g(rb) ) then
-               rho(I,J,K) = 0.0
-            endif
-         enddo
-      enddo
-   enddo
-   do K = phi2-1, phi3+1
-      do J = 1, zupb
-         do I = 1, rupb
-            if ( rhf(I) <= rhf_g(rc) ) then
-               rho(I,J,K) = 0.0
-            endif
-         enddo
-      enddo
-   enddo
-   do K = phi4-1, phiupb
-      do J = 1, zupb
-         do I = 1, rupb
-            if ( rhf(I) <= rhf_g(rb) ) then
-               rho(I,J,K) = 0.0
-            endif
-         enddo
-      enddo
-   enddo
-
-
+   ! Zero out the density field between the axis and the inner boundary points
    do L = philwb, phiupb
       do K = zlwb-1, zupb+1
          do J = rlwb-1, rupb
@@ -508,6 +493,18 @@ rho_cc2=0.0
          do J = rlwb-1, rupb
             if( ( rhf(J) * cos_cc(L) .le. 0.0  ) .and. &
                 ( rhf(J) * cos_cc(L) .gt. rhf(rc) * -1.0 ) ) then
+                 rho(J,K,L) = 0.0
+            endif
+          enddo
+       enddo
+    enddo
+
+
+   ! zero out the density field on RHS of point A
+   do L = philwb, phiupb
+      do K = zlwb-1, zupb+1
+         do J = rlwb-1, rupb
+            if( ( rhf(J) * cos_cc(L) .gt. rhf(ra)) ) then
                  rho(J,K,L) = 0.0
             endif
           enddo
@@ -536,7 +533,7 @@ rho_cc2=0.0
    virial_error_prev = virial_error
 
    call compute_virial_error(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
-                             virial_error1, virial_error2, virial_error)
+                             virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 
 ! Calculating stuff for printing >>
 
@@ -585,8 +582,6 @@ rho_cc2=0.0
 !print*, "mass2  = ", mass2(Q)
 !print*, "massc2 = ", mass_c2(Q)
 
-
-
    ! calculate the center of mass for each star
    do K = philwb, phiupb
       do J  = zlwb, zupb
@@ -606,17 +601,9 @@ rho_cc2=0.0
 !print*, "omsq = ", cnvgom
 !print*, "c1 = ",  cnvgc1,  "c2 = ",  cnvgc2
 !print*,  "h1 = ",  cnvgh1,  "h2 = ",  cnvgh2
-  kappac1 = rhom1*hm1(q)/(nc1+1.0)/rhom1**(gammac1)
-  kappac2 = rhom2*hm2(q)/(nc2+1.0)/rhom2**(gammac2)
-  kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
-  kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
-
 !print*, "hm1(q) = ",hm1(q),"hm2(q) = ",hm2(q)
 !print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
 !print*, "",,"",
-
-! print*, "kappac1= ", kappac1,  "kappae1", kappae1
-! print*, "kappac2= ", kappac2,  "kappae2", kappae2
 
 
 !Find the diameter of the core and envelope in number of cells
@@ -673,7 +660,6 @@ rho_cc2=0.0
      endif
   enddo
 
- 
 write (char1, "(F10.7)") cnvgom
 write (char2, "(F10.7)") cnvgc1
 write (char3, "(F10.7)") cnvgc2
@@ -689,14 +675,10 @@ write (char8, "(F10.7)") virial_error
        print*, "core1 resolution: ", diac1, ac1 
        print*, "core2 resolution: ", diac2, ac2
 
-      write(13,*) "=================================================" 
-      write(13,*) "iteration = ", Q, "rho_cc1=", rho_cc1, "rho_cc2=", rho_cc2
-      write(13,*) "omsq=",omsq(Q), "c1=",c1(Q), "c2=",c2(Q)
-      write(13,*) "hm1=",hm1(Q),"hm2=", hm2(Q)
-      write(13,*)  "rho_2e", rho_2e, "rho_c2e", rho_c2e
+      write(13,*) rho_cc1, rho_cc2,hm1(Q),hm2(Q)
 
-       write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char8)
-
+      write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char8)
+      write(19,*) K_part, Pi_part, W_part 
 ! Finished printing stuff ^^
 
 ! Convergance test
@@ -725,15 +707,18 @@ write (char8, "(F10.7)") virial_error
 enddo                   
 ! END OF THE ITERATION CYCLE
 
-
+print*,"SEMIFINAL Q =", Q
 if ( q >= maxit ) then
    qfinal = maxit
 else
    qfinal = q + 1
 endif
 
-if (q==99 .and. ( cnvgom > eps .or. cnvgc1 > eps .or. cnvgc2 > eps .or. &
+print*,"FINAL Q =", Q
+
+if (q==maxit .and. ( cnvgom > eps .or. cnvgc1 > eps .or. cnvgc2 > eps .or. &
         cnvgh1 > eps .or. cnvgh2 > eps) ) then
+   print*,"SATISFIED"
    div_flag=1
 endif
 
@@ -801,28 +786,27 @@ enddo
 
 
 ! Calculate pressure
-
 !  print*,"hm1",hm1(qfinal)
-  kappac1 = rhom1*hm1(qfinal)/(nc1+1.0)/rhom1**(gammac1)
-  kappac2 = rhom2*hm2(qfinal)/(nc2+1.0)/rhom2**(gammac2)
-  kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
-  kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
+   kappac1 = rhom1*hm1(qfinal)/(nc1+1.0)/rhom1**(gammac1)
+   kappac2 = rhom2*hm2(qfinal)/(nc2+1.0)/rhom2**(gammac2)
+   kappae1 = kappac1*rho_c1d**gammac1/rho_1d**gammae1
+   kappae2 = kappac2*rho_c2e**gammac2/rho_2e**gammae2
 
 !  print*, "kappas used for pressure file:"
 !  print*, "kappac1=",kappac1,"kappae1=",kappae1
 !  print*, "kappac2=",kappac2,"kappae2=",kappae2
 
-  call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
+   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
           pres_d = pres(rd,zd,phid)
           pres_e = pres(re,ze,phie)
  
  
 !   write(13,*) 'Model: ', model_number, ' done in time: ', time2 - time1
 
-  call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
+   call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
             qfinal, initial_model_type, model_number, ra, za, phia,          &
             rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,          &
-            rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,              &
+            rhm1, rhm2, rho_cc1, rho_cc2, xavg1, xavg2, separation,              &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,                  &
             mass_c1, mass_c2, rho_1d, rho_c1d, rho_2e, rho_c2e,              &
             pres_d, pres_e, rem1, rem2, div_flag)
@@ -837,13 +821,46 @@ enddo
 
 !call cpu_time(time1)
 
-call output('density.bin','star',rho)
-call output('pressure.bin','pres',pres)
+
+! Print various maps
+    do i = 1, numphi
+       do j = 1, numz
+          do k = 1, numr
+             const_map(k,j,i)=h(k,j,i)+pot(k,j,i)+omsq(qfinal)*psi(k,j)
+          enddo
+       enddo
+    enddo
+
+    do i = 1, numphi
+       do j = 1, numz
+          do k = 1, numr
+             temp_map(k,j,i)=pot(k,j,i)+omsq(qfinal)*psi(k,j)
+          enddo
+       enddo
+    enddo
+
+   call output('density.bin','star',rho)
+   call output('pressure.bin','pres',pres)
+   call output('const_map.bin','const',const_map)
+   call output('enthalpy.bin','enth',h)
+   call output('pot.bin','pot',pot)
+   call output('pot_eff.bin','eff',temp_map)
+
+   open(unit=10,file='psi')
+      do j=1,numz
+         do i=1,numr
+            write(10,*) i,j,psi(i,j)
+         enddo
+         write(10,*)
+      enddo
+   close(10)
+   print*, "File psi printed"
 
 !call cpu_time(time2)
 
 !   write(13,*) 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
-!   close(13)
-!   close(12)
+   close(19)
+   close(13)
+   close(12)
 
 end subroutine binary_scf

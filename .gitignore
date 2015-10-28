@@ -9,3 +9,12 @@ bs
 # Binary
 scf
 
+# Misc
+*.bin
+pbs_out
+tmr_array
+smz_array
+*1
+*2
+*_log*
+autoread.dat

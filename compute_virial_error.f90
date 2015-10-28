@@ -1,4 +1,4 @@
-subroutine compute_virial_error(psi, rho_1d, rho_2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error)
+subroutine compute_virial_error(psi, rho_1d, rho_2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -20,6 +20,8 @@ real, intent(out) :: virial_error1
 real, intent(out) :: virial_error2
 
 real, intent(out) :: virial_error
+
+real, intent(out) ::  K_part, Pi_part, W_part
 
 !
 !*****************************************************************************************
@@ -133,5 +135,9 @@ ttot = t1 + t2
 virial_error  = abs(2.0*ttot + 3.0*stot + wtot) / abs(wtot)
 virial_error1 = abs(2.0*t1   + 3.0*s1   + w1  ) / abs(w1)
 virial_error2 = abs(2.0*t2   + 3.0*s2   + w2  ) / abs(w2)
+
+K_part = t1 + t2
+Pi_part = s1 + s2
+W_part = w1 + w2
 
 end subroutine compute_virial_error

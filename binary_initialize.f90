@@ -55,7 +55,7 @@ common /trig/ cosine, sine
 
 integer :: rindex_center_1, rindex_center_2
 
-real :: sigsq1, sigsq2
+real :: sigsq1, sigsq2, sigsqc1, sigsqc2
 
 real :: radius_star1, radius_star2
 
@@ -65,6 +65,7 @@ real :: dsq, d
 
 integer :: I, J, K
 
+real :: th1, th2, thc1, thc2,avth1, avth2
 !
 !****************************************************************************************
 
@@ -249,8 +250,152 @@ select case(initial_model_type)
    enddo
 
    case(4)
+   ! Double gaussian model
+   rindex_center_1 = (ra - rb) / 2 + rb
+   rindex_center_2 = (ra - rc) / 2 + rc
+
+   dsq = (rhf_g(rindex_center_1) - rhf_g(rb)) * (rhf_g(rindex_center_1) - rhf_g(rb))
+   sigsq1 = -dsq / log(1.0e-2)
+   sigsqc1 = -dsq / log(1.0e-11)
+
+   dsq = (rhf_g(rindex_center_2) - rhf_g(rc)) * (rhf_g(rindex_center_2) - rhf_g(rc))
+   sigsq2 = - dsq / log(1.0e-2)
+   sigsqc2 = -dsq / log(1.0e-11)
+
+   do K = philwb, phi1
+      do J = zlwb, zupb
+         do I = rlwb, rupb
+            dsq = (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) *  &
+                  (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) +  &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia))*       &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia)) +      &
+                  zhf(J)*zhf(J)
+            rho(I,J,K) = max(rhom1/4 * exp(-dsq / sigsq1), rhom1 * exp(-dsq / sigsqc1)) 
+         enddo
+      enddo
+   enddo
+   do K = phi2, phi3
+      do J = zlwb, zupb
+         do I = rlwb, rupb
+            dsq = (rhf(I)*cosine(K) - rhf_g(rindex_center_2)*cosine(phic)) *  &
+                  (rhf(I)*cosine(K) - rhf_g(rindex_center_2)*cosine(phic)) +  &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_2)*sine(phic)) *      &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_2)*sine(phic)) +      &
+                  zhf(J)*zhf(J)
+            rho(I,J,K) = max(rhom2/4 * exp(-dsq / sigsq2),rhom2 * exp(-dsq / sigsqc2)) 
+         enddo
+      enddo
+   enddo
+   do K = phi4, phiupb
+      do J = zlwb, zupb
+         do I = rlwb, rupb
+            dsq = (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) * &
+                  (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) + &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia)) *     &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia)) +     &
+                  zhf(J)*zhf(J)
+            rho(I,J,K) = max(rhom1/4 * exp(-dsq / sigsq1), rhom1 * exp(-dsq / sigsqc1))
+         enddo
+      enddo
+   enddo
+
+   do K = philwb, phiupb
+      do J = zlwb-1, zupb+1
+         do I = rlwb-1, rupb+1
+             if (rho(I,J,K).lt.1e-3) then
+                 rho(I,J,K) = 0.0
+             endif
+         enddo
+      enddo
+   enddo
+
+   case(5)
+   ! Double gaussian model with density gap
+   rindex_center_1 = (ra - rb) / 2 + rb
+   rindex_center_2 = (ra - rc) / 2 + rc
+
+   dsq = (rhf_g(rindex_center_1) - rhf_g(rb)) * (rhf_g(rindex_center_1) - rhf_g(rb))
+   sigsq1 = -dsq / log(1.0e-2)
+   sigsqc1 = -dsq / log(1.0e-11)
+
+   dsq = (rhf_g(rindex_center_2) - rhf_g(rc)) * (rhf_g(rindex_center_2) - rhf_g(rc))
+   sigsq2 = - dsq / log(1.0e-2)
+   sigsqc2 = -dsq / log(1.0e-11)
+
+   thc1=rhom1/4*1.6
+   th1=rhom1/4.5
+   avth1=(thc1+th1)/2
+
+   thc2=rhom2/4*1.6
+   th2=rhom2/4.5
+   avth2=(thc2+th2)/2
+
+   do K = philwb, phi1
+      do J = zlwb, zupb
+         do I = rlwb, rupb
+            dsq = (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) *  &
+                  (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) +  &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia))*       &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia)) +      &
+                  zhf(J)*zhf(J)
+            rho(I,J,K) = max(rhom1/4 * exp(-dsq / sigsq1), rhom1 * exp(-dsq / sigsqc1))
+            if ( (rho(I,J,K).lt.thc1).and.(rho(I,J,K).gt.avth1) ) then
+                rho(I,J,K) = thc1
+            elseif ( (rho(I,J,K).lt.avth1).and.(rho(I,J,K).gt.th1) ) then
+                rho(I,J,K) = th1
+            endif
+         enddo
+      enddo
+   enddo
+   do K = phi2, phi3
+      do J = zlwb, zupb
+         do I = rlwb, rupb
+            dsq = (rhf(I)*cosine(K) - rhf_g(rindex_center_2)*cosine(phic)) *  &
+                  (rhf(I)*cosine(K) - rhf_g(rindex_center_2)*cosine(phic)) +  &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_2)*sine(phic)) *      &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_2)*sine(phic)) +      &
+                  zhf(J)*zhf(J)
+            rho(I,J,K) = max(rhom2/4 * exp(-dsq / sigsq2),rhom2 * exp(-dsq / sigsqc2))
+            if ( (rho(I,J,K).lt.thc2).and.(rho(I,J,K).gt.avth2) ) then
+                rho(I,J,K) = thc2
+            elseif ( (rho(I,J,K).lt.avth2).and.(rho(I,J,K).gt.th2) ) then
+                rho(I,J,K) = th2
+            endif
+         enddo
+      enddo
+   enddo
+   do K = phi4, phiupb
+      do J = zlwb, zupb
+         do I = rlwb, rupb
+            dsq = (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) * &
+                  (rhf(I)*cosine(K) - rhf_g(rindex_center_1)*cosine(phia)) + &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia)) *     &
+                  (rhf(I)*sine(K) - rhf_g(rindex_center_1)*sine(phia)) +     &
+                  zhf(J)*zhf(J)
+            rho(I,J,K) = max(rhom1/4 * exp(-dsq / sigsq1), rhom1 * exp(-dsq / sigsqc1))
+            if ( (rho(I,J,K).lt.thc1).and.(rho(I,J,K).gt.avth1) ) then
+                rho(I,J,K) = thc1
+            elseif ( (rho(I,J,K).lt.avth1).and.(rho(I,J,K).gt.th1) ) then
+                rho(I,J,K) = th1
+            endif
+         enddo
+      enddo
+   enddo
+
+   do K = philwb, phiupb
+      do J = zlwb-1, zupb+1
+         do I = rlwb-1, rupb+1
+             if (rho(I,J,K).lt.1e-3) then
+                 rho(I,J,K) = 0.0
+             endif
+         enddo
+      enddo
+   enddo
+
+
+   case(6)
    ! read in a density model from the file density.init
-   open(unit=50,file='density.init',form='unformatted',status='old')
+   open(unit=50,file='density.init',form='unformatted',convert='BIG_ENDIAN',status='unknown')
    read(50) rho
    close(50)
 
@@ -261,5 +406,9 @@ end select
 
 ! impose the axial boundary condition
    rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
+
+
+   call output('rhoinit.bin','rhoinit',rho)
+
 
 end subroutine binary_initialize

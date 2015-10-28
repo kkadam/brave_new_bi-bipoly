@@ -32,8 +32,8 @@ print*, kappac1,kappac2, kappae1,kappae2
 !Calculate pressure
 
           do i = 1,phi1+1
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if (rho(k,j,i).gt.rhoth1) then
                       pres(k,j,i) = kappac1*rho(k,j,i)**(gammac1)
                    else
@@ -44,8 +44,8 @@ print*, kappac1,kappac2, kappae1,kappae2
           enddo
 
           do i = phi2,phi3+1
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if (rho(k,j,i).gt.rhoth2) then
                       pres(k,j,i) = kappac2*rho(k,j,i)**(gammac2)
                    else
@@ -56,8 +56,8 @@ print*, kappac1,kappac2, kappae1,kappae2
           enddo
 
           do i = phi4,numphi
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if (rho(k,j,i).gt.rhoth1) then
                       pres(k,j,i) = kappac1*rho(k,j,i)**(gammac1)
                    else
@@ -70,8 +70,8 @@ print*, kappac1,kappac2, kappae1,kappae2
 
 !Set pressure floor
           do i = 1,numphi
-             do j = 2,numz
-                do k = 2,numr
+             do j = 1,numz
+                do k = 1,numr
                    if (rho(k,j,i).lt. epsilon) then
                       pres(k,j,i)=0.0
                    endif

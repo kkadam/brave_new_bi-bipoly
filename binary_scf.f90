@@ -249,14 +249,14 @@ com = xavg1 - com
       pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
       pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
       pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-      pot_d = pot_it(rd,zd,phid)
-      pot_e = pot_it(re,ze,phie)
+      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd-1,zd,phid))
+      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re-1,ze,phie))
           
       psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
       psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
       psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-      psi_d = psi(rd,phid)
-      psi_e = psi(re,phie)
+      psi_d = 0.5*(psi(rd,phid) + psi(rd-1,phid))
+      psi_e = 0.5*(psi(re,phie) + psi(re-1,phie))
          
 !print*, pot_a, pot_b, pot_c, pot_d, pot_e
 !print*, psi_a, psi_b, psi_c, psi_d, psi_e 
@@ -270,13 +270,13 @@ com = xavg1 - com
        
 
    ! Calculate the core c's 
-          rho_1d = rho(rd,zd,phid)
+          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
           rho_c1d=rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
 
-          rho_2e = rho(re,ze,phie)
+          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
           rho_c2e=rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
@@ -532,7 +532,7 @@ com = xavg1 - com
 
    virial_error_prev = virial_error
 
-   call compute_virial_error(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
+   call compute_virial_field(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
                              virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 
 ! Calculating stuff for printing >>
@@ -703,6 +703,7 @@ write (char8, "(F10.7)") virial_error
 !   if ( virial_error > virial_error_prev .and. Q > 10  ) then
 !      exit
 !   endif
+
 
 enddo                   
 ! END OF THE ITERATION CYCLE

@@ -1,4 +1,4 @@
-subroutine compute_virial_field(psi, rho_1d, rho_2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
+subroutine compute_virial_field(psi, rho_1d, rho_2e, rho_c1d, rho_c2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -11,7 +11,7 @@ real, dimension(numr, numphi), intent(in) :: psi
 
 real, dimension(numr,numz,numphi) :: h
 
-real, intent(in) :: omega, rho_1d, rho_2e
+real, intent(in) :: omega, rho_1d, rho_2e, rho_c1d, rho_c2e
 
 real, intent(in) :: volume_factor
 
@@ -59,6 +59,7 @@ real :: ret1, ret2, global_ret1, global_ret2
 
 integer :: I, J, K
 
+real :: rhoth1, rhoth2
 !
 !*****************************************************************************************
 
@@ -70,11 +71,14 @@ t_field = 0.0
 pi_field = 0.0
 w_field = 0.0
 
+rhoth1=(rho_1d)!+rho_c1d)/2.0
+rhoth2=(rho_2e)!+rho_c2e)/2.0
+
 ! sum up the virial pressuure
        do i = phi2, phi3
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_2e) then
+               if (rho(k,j,i).gt.rhoth2) then
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc2+1.0)
                else
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n2+1.0)
@@ -85,7 +89,7 @@ w_field = 0.0
        do i = phi4, numphi
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_1d) then
+               if (rho(k,j,i).gt.rhoth1) then
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)
                else
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)
@@ -96,7 +100,7 @@ w_field = 0.0
        do i = 1, phi1
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_1d) then
+               if (rho(k,j,i).gt.rhoth1) then
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)
                else
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)
@@ -145,9 +149,9 @@ K_part = t1 + t2
 Pi_part = s1 + s2
 W_part = w1 + w2
 
-!call output('pi_field.bin','pi_field',pi_field)
-!call output('w_field.bin','w_field',w_field)
-!call output('t_field.bin','t_field',t_field)
-!call output('h.bin','h',h)
+call output('pi_field.bin','pi_field',pi_field)
+call output('w_field.bin','w_field',w_field)
+call output('t_field.bin','t_field',t_field)
+call output('h.bin','h',h)
 
 end subroutine compute_virial_field

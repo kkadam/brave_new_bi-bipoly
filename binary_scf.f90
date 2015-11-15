@@ -108,6 +108,7 @@ integer :: I, J, K, L, Q
   real :: x
   real, dimension(numphi) :: cos_cc
   real ::  K_part, Pi_part, W_part
+  real :: rho_th1, rho_th2, en_th1, en_th2
 
 !
 !***********************************************************************************
@@ -270,24 +271,37 @@ com = xavg1 - com
        
 
    ! Calculate the core c's 
-          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
+!          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
+          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
+                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
           rho_c1d=rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
 
-          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
+!          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
+          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
+                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
           rho_c2e=rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
           cc2(q) = h_c2e + pot_e+ omsq(q)*psi_e       
 
+          rho_th1=(rho_1d)!+rho_c1d)/2.0
+          rho_th2=(rho_2e)!+rho_c2e)/2.0
+
+print*, "rho_1d old ", rho_1d
+print*, "rho_c1d old ", rho_c1d
+print*,"rho(rd,zd,phid)", rho(rd,zd,phid)
+print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
+print*,"rho_th1", rho_th1
+print*,"rho_th2", rho_th2
 
    ! Now compute the new  enthalpy field from the potential and SCF constants
           do i = 1,phi1+1
              do j = 1,numz
                 do k = 1,rmax
-                   if (rho(k,j,i).gt.rho_1d) then
+                   if (rho(k,j,i).gt.rho_th1) then
                       h(k,j,i) = cc1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
                    else
                       h(k,j,i) = c1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
@@ -312,7 +326,7 @@ com = xavg1 - com
           do i = phi2,phi3+1
              do j = 1,numz
                 do k = 1,rmax
-                   if (rho(k,j,i).gt.rho_2e) then
+                   if (rho(k,j,i).gt.rho_th2) then
                       h(k,j,i) = cc2(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
                    else
                       h(k,j,i) = c2(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
@@ -337,7 +351,7 @@ com = xavg1 - com
           do i = phi4,numphi
              do j = 1,numz
                 do k = 1,rmax
-                   if (rho(k,j,i).gt.rho_1d) then
+                   if (rho(k,j,i).gt.rho_th1) then
                       h(k,j,i) = cc1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
                    else
                       h(k,j,i) = c1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
@@ -370,12 +384,14 @@ com = xavg1 - com
              enddo
           enddo
 
+    en_th1 = 0.5*(h(rd,zd,phid) + h(rd-1,zd,phid))
+    en_th2 = 0.5*(h(re,ze,phie) + h(re-1,ze,phie))
    
    ! Calculate normalization constants
           norm1 = mu1/muc1*(h_c1d/hm1(q))**nc1        
           norm2 = mu2/muc2*(h_c2e/hm2(q))**nc2
 
-   ! Calculate the new density field from the enthalpy
+   ! Calculate the new density field from the enthalpy  WHY old rho thresholds?
       rho_cc1=0.0
       rho_cc2=0.0
 
@@ -383,7 +399,7 @@ com = xavg1 - com
              do j = 1,numz
                 do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_1d) then
+                      if (rho(k,j,i).gt.rho_th1) then
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
                       else
                          !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
@@ -404,7 +420,7 @@ com = xavg1 - com
              do j = 1,numz
                 do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_2e) then
+                      if (rho(k,j,i).gt.rho_th2) then
                          rho(k,j,i) = rhom2*(h(k,j,i)/hm2(q))**nc2
                       else
                          !rho(k,j,i) = rho_c2e*mu2/muc2*(h(k,j,i)/h_e2e)**n2
@@ -425,7 +441,7 @@ com = xavg1 - com
              do j = 1,numz
                 do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_1d) then
+                      if (rho(k,j,i).gt.rho_th1) then
                          rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
                       else
                          !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
@@ -523,6 +539,36 @@ com = xavg1 - com
       rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
 
 
+
+! New thresholds
+!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid)-rho(rd+1,zd,phid))/2
+!          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
+          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
+                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
+          rho_c1d=rho_1d*muc1/mu1
+
+!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-rho(re+1,ze,phie))/2
+!          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
+          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
+                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
+          rho_c2e=rho_2e*muc2/mu2
+
+          rho_th1=(rho_1d)!+rho_c1d)/2.0
+          rho_th2=(rho_2e)!+rho_c2e)/2.0
+
+print*, "rho_1d new ", rho_1d
+print*, "rho_c1d new ", rho_c1d
+print*,"rho(rd,zd,phid)",rho(rd,zd,phid)
+print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
+
+print*,"rho_th1", rho_th1
+
+
+call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
+call output('pressure.bin','pres',pres)
+call output('density.bin','star',rho)
+
+
    ! has the solution converged?
    cnvgom = abs( (omsq(Q) - omsq(Q-1)) / omsq(Q) )
    cnvgc1 = abs( (c1(Q) - c1(Q-1)) / c1(Q) )
@@ -532,7 +578,7 @@ com = xavg1 - com
 
    virial_error_prev = virial_error
 
-   call compute_virial_field(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
+   call compute_virial_field(psi, rho_1d, rho_2e, rho_c1d, rho_c2e, h, sqrt(omsq(Q)), volume_factor, &
                              virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 
 ! Calculating stuff for printing >>
@@ -704,7 +750,6 @@ write (char8, "(F10.7)") virial_error
 !      exit
 !   endif
 
-
 enddo                   
 ! END OF THE ITERATION CYCLE
 
@@ -743,31 +788,38 @@ do K = philwb, phiupb
 enddo
 
 ! now calculate the final angular frequency
-          pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
-          pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
-          pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-          pot_d = pot_it(rd,zd,phid)
-          pot_e = pot_it(re,ze,phie)
+      pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
+      pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
+      pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
+      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd-1,zd,phid))
+      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re-1,ze,phie))
+
+
+      psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))
+      psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))
+      psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
+      psi_d = 0.5*(psi(rd,phid) + psi(rd-1,phid))
+      psi_e = 0.5*(psi(re,phie) + psi(re-1,phie))
           
-          psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
-          psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
-          psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-          psi_d = psi(rd,phid)
-          psi_e = psi(re,phie)
-          
-          omsq(qfinal) = - (pot_a-pot_b)/(psi_a-psi_b) 
+      omsq(qfinal) = - (pot_a-pot_b)/(psi_a-psi_b) 
 
 ! and calculate the two integration constants
           c1(qfinal) = pot_b + omsq(q)*psi_b
           c2(qfinal) = pot_c + omsq(q)*psi_c
        
-          rho_1d = rho(rd,zd,phid)
+!          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
+!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid)-rho(rd+1,zd,phid))/2
+          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
+                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
           rho_c1d= rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(qfinal) = h_c1d + pot_d+ omsq(q)*psi_d 
         
-          rho_2e = rho(re,ze,phie)
+!          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
+!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-rho(re+1,ze,phie))/2
+          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
+                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
           rho_c2e = rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
@@ -797,7 +849,8 @@ enddo
 !  print*, "kappac1=",kappac1,"kappae1=",kappae1
 !  print*, "kappac2=",kappac2,"kappae2=",kappae2
 
-   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
+!   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
+call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
           pres_d = pres(rd,zd,phid)
           pres_e = pres(re,ze,phie)
  
@@ -846,6 +899,78 @@ enddo
    call output('enthalpy.bin','enth',h)
    call output('pot.bin','pot',pot)
    call output('pot_eff.bin','eff',temp_map)
+
+!Diagnostic pressure files!
+  open(unit=10,file="p2")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,2)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File p2 printed"
+
+  open(unit=10,file="p3")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,3)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File p3 printed"
+
+  open(unit=10,file="p4")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,4)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File p4 printed"
+
+  open(unit=10,file="pnumphi")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,numphi)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File pnumphi printed"
+
+  open(unit=10,file="pnumphi-1")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,numphi-1)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File pnumphi-1 printed"
+
+  open(unit=10,file="pnumphi-2")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,numphi-2)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File pnumphi-2 printed"
+
+  open(unit=10,file="pnumphi-3")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,pres(i,j,numphi-3)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File pnumphi-3 printed"
+
 
    open(unit=10,file='psi')
       do j=1,numz

@@ -119,7 +119,7 @@ integer :: I, J, K, L, Q
    qfinal = 1
    div=0.02
    div_flag=0
-   div_it=20
+   div_it=40
    norm_flag=1
 
    volume_factor = 2.0 * dr * dz * dphi
@@ -250,14 +250,23 @@ com = xavg1 - com
       pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
       pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
       pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd-1,zd,phid))
-      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re-1,ze,phie))
+!      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd-1,zd,phid))
+!      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re-1,ze,phie))
+      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+1,zd,phid))
+      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+1,ze,phie))
+!      pot_d = pot_it(rd,zd,phid)
+!      pot_e = pot_it(re,ze,phie)
+
           
       psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
       psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
       psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-      psi_d = 0.5*(psi(rd,phid) + psi(rd-1,phid))
-      psi_e = 0.5*(psi(re,phie) + psi(re-1,phie))
+!      psi_d = 0.5*(psi(rd,phid) + psi(rd-1,phid))
+!      psi_e = 0.5*(psi(re,phie) + psi(re-1,phie))
+      psi_d = 0.5*(psi(rd,phid) + psi(rd+1,phid))
+      psi_e = 0.5*(psi(re,phie) + psi(re+1,phie))
+!      psi_d = psi(rd,phid)
+!      psi_e = psi(re,phie)
          
 !print*, pot_a, pot_b, pot_c, pot_d, pot_e
 !print*, psi_a, psi_b, psi_c, psi_d, psi_e 
@@ -271,24 +280,26 @@ com = xavg1 - com
        
 
    ! Calculate the core c's 
-!          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
-          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
-                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
+!          rho_1d = rho(rd,zd,phid) 
+          rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
+                    rho(rd-1,zd,phid))/2
+!                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
           rho_c1d=rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
 
-!          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
-          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
-                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
+!          rho_2e = rho(re,ze,phie) 
+          rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
+                    rho(re-1,ze,phie))/2 
+!                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
           rho_c2e=rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
           cc2(q) = h_c2e + pot_e+ omsq(q)*psi_e       
 
-          rho_th1=(rho_1d)!+rho_c1d)/2.0
-          rho_th2=(rho_2e)!+rho_c2e)/2.0
+          rho_th1=rho_1d!+rho_c1d)/2.0
+          rho_th2=rho_2e!+rho_c2e)/2.0
 
 print*, "rho_1d old ", rho_1d
 print*, "rho_c1d old ", rho_c1d
@@ -542,19 +553,23 @@ print*,"rho_th2", rho_th2
 
 ! New thresholds
 !          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid)-rho(rd+1,zd,phid))/2
-!          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
-          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
-                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
+!          rho_1d = rho(rd,zd,phid) 
+!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
+!                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
+          rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
+                    rho(rd-1,zd,phid))/2
           rho_c1d=rho_1d*muc1/mu1
 
 !          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-rho(re+1,ze,phie))/2
-!          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
-          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
-                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
+!          rho_2e = rho(re,ze,phie) 
+!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
+!                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
+          rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
+                    rho(re-1,ze,phie))/2
           rho_c2e=rho_2e*muc2/mu2
 
-          rho_th1=(rho_1d)!+rho_c1d)/2.0
-          rho_th2=(rho_2e)!+rho_c2e)/2.0
+          rho_th1=rho_1d!+rho_c1d)/2.0
+          rho_th2=rho_2e!+rho_c2e)/2.0
 
 print*, "rho_1d new ", rho_1d
 print*, "rho_c1d new ", rho_c1d
@@ -791,15 +806,20 @@ enddo
       pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
       pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
       pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd-1,zd,phid))
-      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re-1,ze,phie))
-
+      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+1,zd,phid))
+      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+1,ze,phie))
+!      pot_d = pot_it(rd,zd,phid)
+!      pot_e = pot_it(re,ze,phie)
 
       psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))
       psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))
       psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-      psi_d = 0.5*(psi(rd,phid) + psi(rd-1,phid))
-      psi_e = 0.5*(psi(re,phie) + psi(re-1,phie))
+      psi_d = 0.5*(psi(rd,phid) + psi(rd+1,phid))
+      psi_e = 0.5*(psi(re,phie) + psi(re+1,phie))
+!      psi_d = psi(rd,phid)
+!      psi_e = psi(re,phie)
+
+
           
       omsq(qfinal) = - (pot_a-pot_b)/(psi_a-psi_b) 
 
@@ -807,19 +827,23 @@ enddo
           c1(qfinal) = pot_b + omsq(q)*psi_b
           c2(qfinal) = pot_c + omsq(q)*psi_c
        
-!          rho_1d = 0.5*(rho(rd,zd,phid) + rho(rd-1,zd,phid))
+!          rho_1d = rho(rd,zd,phid)
 !          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid)-rho(rd+1,zd,phid))/2
-          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
-                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
+!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
+!                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
+          rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
+                    rho(rd-1,zd,phid))/2
           rho_c1d= rho_1d*muc1/mu1       
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
           h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
           cc1(qfinal) = h_c1d + pot_d+ omsq(q)*psi_d 
         
-!          rho_2e = 0.5*(rho(re,ze,phie) + rho(re-1,ze,phie))
+!          rho_2e = rho(re,ze,phie) 
 !          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-rho(re+1,ze,phie))/2
-          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
-                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
+!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
+!                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
+          rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
+                    rho(re-1,ze,phie))/2
           rho_c2e = rho_2e*muc2/mu2       
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
           h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
@@ -851,8 +875,10 @@ enddo
 
 !   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
 call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
-          pres_d = pres(rd,zd,phid)
-          pres_e = pres(re,ze,phie)
+!          pres_d = pres(rd,zd,phid)
+!          pres_e = pres(re,ze,phie)
+          pres_d = 0.5*(pres(rd,zd,phid) + pres(rd+1,zd,phid))
+          pres_e = 0.5*(pres(re,ze,phie) + pres(re+1,ze,phie))
  
  
 !   write(13,*) 'Model: ', model_number, ' done in time: ', time2 - time1

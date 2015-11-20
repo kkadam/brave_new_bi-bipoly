@@ -88,7 +88,6 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real :: temp_rch
   real, dimension(3) :: temp_rch_loc
   real :: l2loc, l3loc, temp_l2loc, temp_l3loc
-  real :: rho1i, rho2i
   integer :: louter1,  louter2
   integer :: I, J, K, L
   integer :: index
@@ -699,8 +698,6 @@ close(11)
 
 print*, "File ", trim(model_file), " printed"
 
-rho1i = (rho_1d+rho_c1d)/2.0
-rho2i = (rho_2e+rho_c2e)/2.0
 
 open(unit=13,file="autoread.dat")
 write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, " ",  &

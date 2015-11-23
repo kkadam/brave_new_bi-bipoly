@@ -110,6 +110,7 @@ integer :: I, J, K, L, Q
   real ::  K_part, Pi_part, W_part
   real :: rho_th1, rho_th2, en_th1, en_th2
 
+  real :: pres_1d, pres_2e
 !
 !***********************************************************************************
 
@@ -301,12 +302,12 @@ com = xavg1 - com
           rho_th1=rho_1d!+rho_c1d)/2.0
           rho_th2=rho_2e!+rho_c2e)/2.0
 
-print*, "rho_1d old ", rho_1d
-print*, "rho_c1d old ", rho_c1d
-print*,"rho(rd,zd,phid)", rho(rd,zd,phid)
-print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
-print*,"rho_th1", rho_th1
-print*,"rho_th2", rho_th2
+!print*, "rho_1d old ", rho_1d
+!print*, "rho_c1d old ", rho_c1d
+!print*,"rho(rd,zd,phid)", rho(rd,zd,phid)
+!print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
+!print*,"rho_th1", rho_th1
+!print*,"rho_th2", rho_th2
 
    ! Now compute the new  enthalpy field from the potential and SCF constants
           do i = 1,phi1+1
@@ -472,7 +473,7 @@ print*,"rho_th2", rho_th2
 
    ! Conditionally normalize wrt the central densities of the stars
       if ( norm_flag == 1 ) then
-          print*, "normalizing "
+!          print*, "normalizing "
           do i = 1,phi1+1
              do j = 2,numz
                 do k = 2,numr
@@ -571,12 +572,12 @@ print*,"rho_th2", rho_th2
           rho_th1=rho_1d!+rho_c1d)/2.0
           rho_th2=rho_2e!+rho_c2e)/2.0
 
-print*, "rho_1d new ", rho_1d
-print*, "rho_c1d new ", rho_c1d
-print*,"rho(rd,zd,phid)",rho(rd,zd,phid)
-print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
+!print*, "rho_1d new ", rho_1d
+!print*, "rho_c1d new ", rho_c1d
+!print*,"rho(rd,zd,phid)",rho(rd,zd,phid)
+!print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
 
-print*,"rho_th1", rho_th1
+!print*,"rho_th1", rho_th1
 
 
 call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
@@ -593,7 +594,7 @@ call output('density.bin','star',rho)
 
    virial_error_prev = virial_error
 
-   call compute_virial_field(psi, rho_1d, rho_2e, rho_c1d, rho_c2e, h, sqrt(omsq(Q)), volume_factor, &
+   call compute_virial_field(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
                              virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 
 ! Calculating stuff for printing >>
@@ -873,14 +874,19 @@ enddo
 !  print*, "kappac1=",kappac1,"kappae1=",kappae1
 !  print*, "kappac2=",kappac2,"kappae2=",kappae2
 
-!   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_c1d,rho_2e,rho_c2e)
-call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
+
+call newpressure(rho,pres,h,rho_1d,rho_2e)
+   call output('pressure.bin','newpres',pres)
+
+
+!   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_2e)
+
 !          pres_d = pres(rd,zd,phid)
 !          pres_e = pres(re,ze,phie)
           pres_d = 0.5*(pres(rd,zd,phid) + pres(rd+1,zd,phid))
           pres_e = 0.5*(pres(re,ze,phie) + pres(re+1,ze,phie))
- 
- 
+
+
 !   write(13,*) 'Model: ', model_number, ' done in time: ', time2 - time1
 
    call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &

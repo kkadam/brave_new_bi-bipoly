@@ -1,4 +1,4 @@
-subroutine compute_virial_field(psi, rho_1d, rho_2e, rho_c1d, rho_c2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
+subroutine compute_virial_field(psi, rho_1d, rho_2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -11,7 +11,7 @@ real, dimension(numr, numphi), intent(in) :: psi
 
 real, dimension(numr,numz,numphi) :: h
 
-real, intent(in) :: omega, rho_1d, rho_2e, rho_c1d, rho_c2e
+real, intent(in) :: omega, rho_1d, rho_2e
 
 real, intent(in) :: volume_factor
 
@@ -71,8 +71,8 @@ t_field = 0.0
 pi_field = 0.0
 w_field = 0.0
 
-rhoth1=(rho_1d)!+rho_c1d)/2.0
-rhoth2=(rho_2e)!+rho_c2e)/2.0
+rhoth1=rho_1d
+rhoth2=rho_2e
 
 ! sum up the virial pressuure
        do i = phi2, phi3
@@ -149,9 +149,8 @@ K_part = t1 + t2
 Pi_part = s1 + s2
 W_part = w1 + w2
 
-call output('pi_field.bin','pi_field',pi_field)
-call output('w_field.bin','w_field',w_field)
-call output('t_field.bin','t_field',t_field)
-call output('h.bin','h',h)
+!call output('pi_field.bin','pi_field',pi_field)
+!call output('w_field.bin','w_field',w_field)
+!call output('t_field.bin','t_field',t_field)
 
 end subroutine compute_virial_field

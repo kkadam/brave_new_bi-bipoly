@@ -36,12 +36,15 @@ real, dimension(numr,numz,numphi), intent(in) :: data_array
 !out_template   = 'frame'
 
 ! create the filenames for the files every pe is going
-write(out_file,'(a,i4)') trim(out_template)
-open(unit=50,file=trim(out_file),form='unformatted',convert='BIG_ENDIAN',status='unknown') 
-write(50) data_array
-close(50)
+if (trim(out_template).ne."null") then
+   write(out_file,'(a,i4)') trim(out_template)
+   open(unit=50,file=trim(out_file),form='unformatted',convert='BIG_ENDIAN',status='unknown') 
+      write(50) data_array
+   close(50)
 
-print*, "File ", trim(out_file), " printed"
+  print*, "File ", trim(out_file), " printed"
+endif
+
 
 file1=trim(file2d)//'1'
 file2=trim(file2d)//'2'

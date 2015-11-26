@@ -108,7 +108,7 @@ integer :: I, J, K, L, Q
   real :: x
   real, dimension(numphi) :: cos_cc
   real ::  K_part, Pi_part, W_part
-  real :: rho_th1, rho_th2, en_th1, en_th2
+  real :: rho_th1, rho_th2
 
   real :: pres_1d, pres_2e
 !
@@ -396,8 +396,6 @@ com = xavg1 - com
              enddo
           enddo
 
-    en_th1 = 0.5*(h(rd,zd,phid) + h(rd-1,zd,phid))
-    en_th2 = 0.5*(h(re,ze,phie) + h(re-1,ze,phie))
    
    ! Calculate normalization constants
           norm1 = mu1/muc1*(h_c1d/hm1(q))**nc1        
@@ -580,9 +578,9 @@ com = xavg1 - com
 !print*,"rho_th1", rho_th1
 
 
-call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
-call output('pressure.bin','pres',pres)
-call output('density.bin','star',rho)
+!call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
+!call output('null','pres',pres)
+call output('null','star',rho)
 
 
    ! has the solution converged?

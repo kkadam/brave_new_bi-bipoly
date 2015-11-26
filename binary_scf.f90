@@ -182,34 +182,11 @@ integer :: I, J, K, L, Q
      cos_cc(L) = cos(phi(L))
    enddo
 
-! calculate the initial total mass
-do K = philwb, phiupb
-   do J = zlwb, zupb
-      do I = rlwb, rupb
-         temp(I,J,K) = rhf(I) * rho(I,J,K)
-      enddo
-   enddo
-enddo
-call binary_sum(temp, ret1, ret2)
 
-mass1(1) = volume_factor * ret1
-mass2(1) = volume_factor * ret2
-
-! calculate the initial center of mass
-do K = philwb, phiupb
-   do J = zlwb, zupb
-      do I = rlwb, rupb
-         temp(I,J,K) = rhf(I) * rhf(I) * cosine(K) * rho(I,J,K)
-      enddo
-   enddo
-enddo
-call binary_sum(temp, ret1, ret2)
-
-xavg1 = volume_factor * ret1 / mass1(1)
-xavg2 = volume_factor * ret2 / mass2(1)
-separation = xavg1 - xavg2
-com = separation * mass2(1) / ( mass1(1) + mass2(1) )
-com = xavg1 - com
+!Calculate initial density field parameters
+   call mass_param(rho, rho_1d, rho_2e, mass1, mass2,   &
+                      mass_c1, mass_c2, xavg1, xavg2,   &
+                      com, separation)
 
 
 ! Open logfiles
@@ -598,73 +575,15 @@ call output('null','star',rho)
 ! Calculating stuff for printing >>
 
 
-   ! calculate the total mass for each star  and core mass for each star
-   do K = philwb, phiupb
-      do J = zlwb, zupb
-         do I = rlwb, rupb
-            temp(I,J,K) = rhf(I) * rho(I,J,K)
-         enddo
-      enddo
-   enddo
-   call binary_sum(temp, ret1, ret2)
-
-   mass1(Q) = volume_factor * ret1 
-   mass2(Q) = volume_factor * ret2
-
-          temp = 0.0          
-          do i = 1, numphi
-             do j = 2, numz
-                do k = 2, numr
-                   if (rho(k,j,i).gt.rho_1d) then 
-                     temp(k,j,i) = rhf(k)*rho(k,j,i)
-                   endif
-                enddo
-             enddo
-          enddo          
-          call binary_sum(temp, ret1, ret2)
-          mass_c1(q) = volume_factor*ret1
-          
-          temp=0.0
-          do i = 1, numphi
-             do j = 2, numz
-                do k = 2, numr
-                   if (rho(k,j,i).gt.rho_2e) then 
-                     temp(k,j,i) = rhf(k)*rho(k,j,i)
-                   endif
-                enddo
-             enddo
-          enddo          
-          call binary_sum(temp, ret1, ret2)
-          mass_c2(q) = volume_factor*ret2  
-
-!print*, "mass1  = ", mass1(Q)
-!print*, "massc1 = ", mass_c1(Q) 
-!print*, "mass2  = ", mass2(Q)
-!print*, "massc2 = ", mass_c2(Q)
-
-   ! calculate the center of mass for each star
-   do K = philwb, phiupb
-      do J  = zlwb, zupb
-         do I = rlwb, rupb
-            temp(I,J,K) = rhf(I) * rhf(I) * cosine(K) * rho(I,J,K)
-         enddo
-      enddo
-   enddo
-   call binary_sum(temp, ret1, ret2)
-
-   xavg1 = volume_factor * ret1 / mass1(Q)
-   xavg2 = volume_factor * ret2 / mass2(Q)
-   separation = xavg1 - xavg2
-   com = separation * mass2(Q) / (mass1(Q) + mass2(Q) )
-   com = xavg1 - com
- 
-!print*, "omsq = ", cnvgom
 !print*, "c1 = ",  cnvgc1,  "c2 = ",  cnvgc2
 !print*,  "h1 = ",  cnvgh1,  "h2 = ",  cnvgh2
 !print*, "hm1(q) = ",hm1(q),"hm2(q) = ",hm2(q)
 !print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
 !print*, "",,"",
 
+call mass_param(rho, rho_1d, rho_2e, mass1(Q), mass2(Q),   &
+                      mass_c1(Q), mass_c2(Q), xavg1, xavg2,   &
+                      com, separation)
 
 !Find the diameter of the core and envelope in number of cells
   diac1=0

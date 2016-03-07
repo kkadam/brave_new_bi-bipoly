@@ -1,4 +1,4 @@
-subroutine compute_virial_field(psi, rho_1d, rho_2e, h, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
+subroutine compute_virial_field(psi, h, h_e1d, h_e2e, core_template, omega, volume_factor, virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 implicit none
 include 'runscf.h'
 !include 'mpif.h'
@@ -11,7 +11,9 @@ real, dimension(numr, numphi), intent(in) :: psi
 
 real, dimension(numr,numz,numphi) :: h
 
-real, intent(in) :: omega, rho_1d, rho_2e
+integer, dimension(numr, numz, numphi), intent(in) :: core_template
+
+real, intent(in) :: omega, h_e1d, h_e2e
 
 real, intent(in) :: volume_factor
 
@@ -59,7 +61,6 @@ real :: ret1, ret2, global_ret1, global_ret2
 
 integer :: I, J, K
 
-real :: rhoth1, rhoth2
 !
 !*****************************************************************************************
 
@@ -71,14 +72,12 @@ t_field = 0.0
 pi_field = 0.0
 w_field = 0.0
 
-rhoth1=rho_1d
-rhoth2=rho_2e
 
 ! sum up the virial pressuure
        do i = phi2, phi3
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rhoth2) then
+               if ( core_template(k,j,i).eq.1 ) then
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc2+1.0)
                else
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n2+1.0)
@@ -89,7 +88,7 @@ rhoth2=rho_2e
        do i = phi4, numphi
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rhoth1) then
+               if ( core_template(k,j,i).eq.1 ) then
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)
                else
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)
@@ -100,7 +99,7 @@ rhoth2=rho_2e
        do i = 1, phi1
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rhoth1) then
+               if ( core_template(k,j,i).eq.1 ) then
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)
                else
                  pi_field(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)

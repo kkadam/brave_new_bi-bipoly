@@ -1,5 +1,5 @@
 subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
-            qfinal, initial_model_type, model_number, ra, za, phia,  &
+             h_e1d, h_e2e, core_template, qfinal, initial_model_type, model_number, ra, za, phia,  &
             rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,  &
             rhm1, rhm2, rhom1, rhom2, xavg1, xavg2, separation,      &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,          &
@@ -15,6 +15,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, dimension(maxit), intent(in) :: c1, c2, omsq, hm1, hm2, mass1, mass2, &
                                         cc1, cc2, hem1, hem2, mass_c1, mass_c2
   real, dimension(numr, numphi), intent(in) :: psi
+  integer, dimension(numr, numz, numphi), intent(in) :: core_template
   real, dimension(numr,numz,numphi) :: h
   integer, intent(in) :: qfinal
   integer, intent(in) :: initial_model_type
@@ -29,7 +30,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, intent(in) :: rhoem1, rhoem2  
   real, intent(in) :: xavg1, xavg2, separation, com
   real, intent(in) :: volume_factor
-  real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e
+  real, intent(in) :: rho_1d, rho_c1d, rho_2e, rho_c2e, pres_d, pres_e,  h_e1d, h_e2e
   integer, intent(in) :: rem1, rem2
   integer, intent(in) :: div_flag
 
@@ -97,7 +98,7 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   integer, dimension(1) :: center1, center2
 !
 !*****************************************************************************************
-
+cuurvature = 0.0
   model_template = 'model_details_'
 
   gammae1 = 1.0 + 1.0/n1
@@ -125,7 +126,7 @@ ae2=0
        do i = phi2, phi3
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_2e) then
+               if ( core_template(k,j,i).eq.1 ) then
                  temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc2+1.0) 
                else
                  temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n2+1.0) 
@@ -136,7 +137,7 @@ ae2=0
        do i = phi4, numphi
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_1d) then
+               if ( core_template(k,j,i).eq.1 ) then
                  temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0) 
                else
                  temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)  
@@ -147,14 +148,14 @@ ae2=0
        do i = 1, phi1
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_1d) then
+               if ( core_template(k,j,i).eq.1 ) then
                  temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(nc1+1.0)   
                else
                  temp(k,j,i) = rhf(k)*rho(k,j,i)*h(k,j,i)/(n1+1.0)
                endif   
              enddo
           enddo
-       enddo     	       
+       enddo
        	       
   call binary_sum(temp, ret1, ret2)
   s1 = volume_factor * ret1 
@@ -228,7 +229,7 @@ print*, "Qfinal", qfinal
        do i = phi2, phi3
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_2e) then
+               if ( core_template(k,j,i).eq.1 ) then
                  temp(k,j,i) = kappac2*nc2*rhf(k)*rho(k,j,i)**gammac2  
                else
                  temp(k,j,i) = kappae2*n2*rhf(k)*rho(k,j,i)**gammae2 
@@ -239,7 +240,7 @@ print*, "Qfinal", qfinal
        do i = phi4, numphi
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_1d) then
+               if ( core_template(k,j,i).eq.1 ) then
                  temp(k,j,i) = kappac1*nc1*rhf(k)*rho(k,j,i)**gammac1   
                else
                  temp(k,j,i) = kappae1*n1*rhf(k)*rho(k,j,i)**gammae1 
@@ -250,7 +251,7 @@ print*, "Qfinal", qfinal
        do i = 1, phi1
           do j = 2, numz
              do k = 2, numr
-               if (rho(k,j,i).gt.rho_1d) then
+               if ( core_template(k,j,i).eq.1 ) then
                  temp(k,j,i) = kappac1*nc1*rhf(k)*rho(k,j,i)**gammac1   
                else
                  temp(k,j,i) = kappae1*n1*rhf(k)*rho(k,j,i)**gammae1 
@@ -420,6 +421,9 @@ do I = rlwb, rupb
 enddo
 
 ! find the outer edge of the Roche lobes
+rochemax1 = 0
+rochemax2 = 0
+
 do I = rlwb, rupb
    if ( rhf(I) > rhm1(1) ) then
       if ( rchpot(I,zlwb,phia) <= rpotcrit .and. rchpot(I+1,zlwb,phia) >= rpotcrit ) then
@@ -704,5 +708,10 @@ write(13,*) nc1, " ", n1, " ", nc2, " ", n2, " ", numr, " ", numz, " ", numphi, 
      omega, " ", kappac1, " ", kappae1, " ", kappac2, " ", kappae2, " ", rho_c1d, " ",&
       rho_1d, " ",rho_c2e, " ",rho_2e, " ", pres_d, " ", pres_e, " ", xcrit, " ", com 
 close(13)
+
+print*, 'Roche lobe filling factor', vol1/volr1
+
+print*,'Roche lobe filling factor', vol2/volr2
+
 
 end subroutine binary_output

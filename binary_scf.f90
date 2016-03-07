@@ -42,13 +42,19 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
 
 real, dimension(numr,numz,numphi) :: pres
 
+real, dimension(numr,numz,numphi) :: h
+real :: h_c1d, h_e1d, h_c2e, h_e2e
+common /enthalpy/ h, h_c1d, h_e1d, h_c2e, h_e2e
+
 !
 !**************************************************************************************
 !
 !    local variables
 !
 
-real, dimension(numr, numz, numphi) :: h, pot_it, pot_old, temp, const_map, temp_map
+real, dimension(numr, numz, numphi) :: pot_it, pot_old, temp, const_map, temp_map
+
+integer, dimension(numr, numz, numphi) :: core_template
 
 real, dimension(numr, numphi) :: psi
 
@@ -91,7 +97,6 @@ integer :: I, J, K, L, Q
 
 
   real :: rho_c1d, rho_1d, rho_c2e, rho_2e, pres_d, pres_e
-  real :: h_c1d, h_e1d, h_c2e, h_e2e 
   real :: rhoem1, rhoem2, norm1, norm2
   integer :: rem1, zem1, phiem1, rem2, zem2, phiem2
   integer :: rm1, zm1, phim1, rm2, zm2, phim2
@@ -108,9 +113,11 @@ integer :: I, J, K, L, Q
   real :: x
   real, dimension(numphi) :: cos_cc
   real ::  K_part, Pi_part, W_part
-  real :: rho_th1, rho_th2
 
   real :: pres_1d, pres_2e
+  integer :: af1, af2
+
+  real :: spin1, spin2, ang_mom
 !
 !***********************************************************************************
 
@@ -128,6 +135,11 @@ integer :: I, J, K, L, Q
 
    h = 0.0
    psi = 0.0
+
+   h_c1d = 0.0
+   h_e1d = 0.0
+   h_c2e = 0.0
+   h_e2e = 0.0
 
    mass1 = 0.0
    mass2 = 0.0
@@ -150,7 +162,7 @@ integer :: I, J, K, L, Q
    temp=0
    const_map=0
    temp_map=0
-
+   core_template = 0
 
 ! Initialize phi and z values of boundary points
    phia = 1
@@ -163,7 +175,7 @@ integer :: I, J, K, L, Q
    zc = 2
    zd = 2
    ze = 2
-
+   
 
 ! Find Gammas
    gammae1 = 1.0 + 1.0/n1
@@ -184,18 +196,22 @@ integer :: I, J, K, L, Q
 
 
 !Calculate initial density field parameters
-   call mass_param(rho, rho_1d, rho_2e, mass1, mass2,   &
-                      mass_c1, mass_c2, xavg1, xavg2,   &
-                      com, separation)
+   rho_1d = rho(rd,zd,phid)      ! Only approximately
+   rho_2e = rho(re,ze,phie)
+   rho_1d = rho(rd,zd,phid)
+   rho_2e = rho(re,ze,phie)
 
+   call mass_param(rho, h, h_e1d, h_e2e,core_template, sqrt(omsq(1)), mass1, mass2,   &
+                      mass_c1(1), mass_c2(1), xavg1, xavg2,   &
+                      com, separation, spin1, spin2, ang_mom )
 
 ! Open logfiles
-   open(unit=13,file='iteration_log',form='formatted',status='unknown',position='append')
-   write(13,*)  1, mass1(1), mass2(1), xavg1, xavg2, com, separation
+!   open(unit=13,file='iteration_log',form='formatted',status='unknown',position='append')
+!   write(13,*)  1, mass1(1), mass2(1), xavg1, xavg2, com, separation
 
    open(unit=12,file='convergence_log',form='formatted',status='unknown')
 
-   open(unit=19,file='virial_log',form='formatted',status='unknown')
+!   open(unit=19,file='virial_log',form='formatted',status='unknown')
 
 
 
@@ -220,35 +236,37 @@ integer :: I, J, K, L, Q
    ! Compute the form factor for the centrifugal potential
       do K = philwb, phiupb
          do I = rlwb-1, rupb+1
-            psi(I,K) = - 0.5 * ( (rhf(I)*cosine(K) - com)**2 + rhf(I)*rhf(I)*sine(K)*sine(K) )
+            psi(I,K) = - 0.5 * ( (rhf(I)*cosine(K) - com)**2 + (rhf(I)*sine(K))**2 )
          enddo
       enddo
+
+   ! Determine if the core boundary is towards the axis or away from it, 
+   ! axis flag, af1 = 1 if core is near the axis, otherwise af1 = -1 
+   ! Same for af2, for star2
+      af1 = -1
+      if ( abs(xavg1).gt.rhf(rd) ) then
+         af1 = 1
+      endif
+
+      af2 = -1
+      if ( abs(xavg2).gt.rhf(re) ) then
+         af2 = 1
+      endif
+ 
 
    ! Find pot and psi at the boundary points
       pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
       pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
       pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-!      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd-1,zd,phid))
-!      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re-1,ze,phie))
-      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+1,zd,phid))
-      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+1,ze,phie))
-!      pot_d = pot_it(rd,zd,phid)
-!      pot_e = pot_it(re,ze,phie)
+      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+af1,zd,phid))
+      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+af2,ze,phie))
 
-          
-      psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))          
-      psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))                    
+
+      psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))
+      psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))
       psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-!      psi_d = 0.5*(psi(rd,phid) + psi(rd-1,phid))
-!      psi_e = 0.5*(psi(re,phie) + psi(re-1,phie))
-      psi_d = 0.5*(psi(rd,phid) + psi(rd+1,phid))
-      psi_e = 0.5*(psi(re,phie) + psi(re+1,phie))
-!      psi_d = psi(rd,phid)
-!      psi_e = psi(re,phie)
-         
-!print*, pot_a, pot_b, pot_c, pot_d, pot_e
-!print*, psi_a, psi_b, psi_c, psi_d, psi_e 
-
+      psi_d = 0.5*(psi(rd,phid) + psi(rd+af1,phid))
+      psi_e = 0.5*(psi(re,phie) + psi(re+af2,phie))
 
    ! Calculate the angular frequency and envelope c's
       omsq(q) = - (pot_a-pot_b)/(psi_a-psi_b)
@@ -258,117 +276,83 @@ integer :: I, J, K, L, Q
        
 
    ! Calculate the core c's 
-!          rho_1d = rho(rd,zd,phid) 
           rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
-                    rho(rd-1,zd,phid))/2
-!                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
-          rho_c1d=rho_1d*muc1/mu1       
+                    rho(rd-af1,zd,phid))/2
+          rho_c1d=rho_1d*muc1/mu1
           h_e1d = c1(q) - pot_d - omsq(q)*psi_d
-          h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
-          cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d 
+          h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1
+          cc1(q) = h_c1d + pot_d+ omsq(q)*psi_d
 
-!          rho_2e = rho(re,ze,phie) 
           rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
-                    rho(re-1,ze,phie))/2 
-!                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
-          rho_c2e=rho_2e*muc2/mu2       
+                    rho(re-af2,ze,phie))/2
+          rho_c2e=rho_2e*muc2/mu2
           h_e2e = c2(q) - pot_e - omsq(q)*psi_e
-          h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
-          cc2(q) = h_c2e + pot_e+ omsq(q)*psi_e       
+          h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2
+          cc2(q) = h_c2e + pot_e+ omsq(q)*psi_e
 
-          rho_th1=rho_1d!+rho_c1d)/2.0
-          rho_th2=rho_2e!+rho_c2e)/2.0
 
-!print*, "rho_1d old ", rho_1d
-!print*, "rho_c1d old ", rho_c1d
-!print*,"rho(rd,zd,phid)", rho(rd,zd,phid)
-!print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
-!print*,"rho_th1", rho_th1
-!print*,"rho_th2", rho_th2
+print*, "h_e1d = ", h_e1d ,"h_e2e = ", h_e2e
+print*, "h_c1d = ", h_c1d ,"h_c2e = ", h_c2e
+
+print*, rd, zd, phid
+print*, "rho(rd,zd,phid) ", rho(rd,zd,phid)
+print*,"rho(rd-af1,zd,phid) ", rho(rd-af1,zd,phid), "af1 ", af1
+print*, "rho_1d ", rho_1d, "rho_c1d ", rho_c1d
+print*,"rho(rd,zd,phid)", rho(rd,zd,phid)
+print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
 
    ! Now compute the new  enthalpy field from the potential and SCF constants
+          core_template = 0
           do i = 1,phi1+1
              do j = 1,numz
                 do k = 1,rmax
-                   if (rho(k,j,i).gt.rho_th1) then
+                   h(k,j,i) = c1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
+                   if ( h(k,j,i).gt.h_e1d ) then
                       h(k,j,i) = cc1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
-                   else
-                      h(k,j,i) = c1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
-                      
-                      if(h(k,j,i).gt.hem1(q)) then
-                        hem1(q) = h(k,j,i)
-                        rem1 = k
-                        zem1 = j
-                        phiem1 = i
-                      endif
-
-                   endif
+                      core_template(k,j,i) = 1
                    if(h(k,j,i).gt.hm1(q)) then
                       hm1(q) = h(k,j,i)
                       rm1 = k
                       zm1 = j
                       phim1 = i
                    endif
+                   endif
                 enddo
              enddo
           enddo
+
           do i = phi2,phi3+1
              do j = 1,numz
                 do k = 1,rmax
-                   if (rho(k,j,i).gt.rho_th2) then
+                   h(k,j,i) = c2(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
+                   if ( h(k,j,i).gt.h_e2e ) then  
                       h(k,j,i) = cc2(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
-                   else
-                      h(k,j,i) = c2(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
-                      
-                      if(h(k,j,i).gt.hem2(q)) then
-                        hem2(q) = h(k,j,i)
-                        rem2 = k
-                        zem2 = j
-                        phiem2 = i
+                      core_template(k,j,i) = 1 
+                      if(h(k,j,i).gt.hm2(q)) then
+                        hm2(q) = h(k,j,i)
+                        rm2 = k
+                        zm2 = j
+                        phim2 = i
                       endif
-                      
-                   endif
-                   if(h(k,j,i).gt.hm2(q)) then
-                      hm2(q) = h(k,j,i)
-                      rm2 = k
-                      zm2 = j
-                      phim2 = i
-                   endif
+                      endif
                 enddo
              enddo
           enddo
+
           do i = phi4,numphi
              do j = 1,numz
                 do k = 1,rmax
-                   if (rho(k,j,i).gt.rho_th1) then
+                   h(k,j,i) = c1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
+                   if ( h(k,j,i).gt.h_e1d ) then
                       h(k,j,i) = cc1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)
-                   else
-                      h(k,j,i) = c1(q) - pot_it(k,j,i) - omsq(q)*psi(k,i)  
-                      
-                      if(h(k,j,i).gt.hem1(q)) then
-                        hem1(q) = h(k,j,i)
-                        rem1 = k
-                        zem1 = j
-                        phiem1 = i
-                      endif
-                      
-                   endif
+                      core_template(k,j,i) = 1
                    if(h(k,j,i).gt.hm1(q)) then
                       hm1(q) = h(k,j,i)
                       rm1 = k
                       zm1 = j
                       phim1 = i
-                   endif
-                enddo
-             enddo
-          enddo 
-
-          do i = 1,numphi
-             do j = 1,numz
-                do k = 1,rmax
-                    if (h(k,j,i).lt.0) then
-                       h(k,j,i)=0.0
-                    endif
+                   endif    
+                   endif                   
                 enddo
              enddo
           enddo
@@ -378,6 +362,9 @@ integer :: I, J, K, L, Q
           norm1 = mu1/muc1*(h_c1d/hm1(q))**nc1        
           norm2 = mu2/muc2*(h_c2e/hm2(q))**nc2
 
+print*, "norms ", norm1, norm2
+print*, "hm1 ", hm1(Q), "hm2 ", hm2(Q)
+
    ! Calculate the new density field from the enthalpy  WHY old rho thresholds?
       rho_cc1=0.0
       rho_cc2=0.0
@@ -386,11 +373,10 @@ integer :: I, J, K, L, Q
              do j = 1,numz
                 do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_th1) then
-                         rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
+                      if ( core_template(k,j,i).eq.1 ) then
+                         rho(k,j,i) = rho_c1d*(h(k,j,i)/h_c1d)**nc1
                       else
-                         !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
-                         rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
+                         rho(k,j,i) = rho_1d*(h(k,j,i)/h_e1d)**n1                      
                       endif
                    else   
                       rho(k,j,i) = 0.0
@@ -407,11 +393,10 @@ integer :: I, J, K, L, Q
              do j = 1,numz
                 do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_th2) then
-                         rho(k,j,i) = rhom2*(h(k,j,i)/hm2(q))**nc2
+                      if ( core_template(k,j,i).eq.1 ) then
+                         rho(k,j,i) = rho_c2e*(h(k,j,i)/h_c2e)**nc2
                       else
-                         !rho(k,j,i) = rho_c2e*mu2/muc2*(h(k,j,i)/h_e2e)**n2
-                         rho(k,j,i) = rhom2*norm2*(h(k,j,i)/h_e2e)**n2
+                         rho(k,j,i) = rho_2e*(h(k,j,i)/h_e2e)**n2
                       endif
                    else   
                       rho(k,j,i) = 0.0
@@ -428,11 +413,10 @@ integer :: I, J, K, L, Q
              do j = 1,numz
                 do k = 1,numr
                    if(h(k,j,i).gt.0.0) then
-                      if (rho(k,j,i).gt.rho_th1) then
-                         rho(k,j,i) = rhom1*(h(k,j,i)/hm1(q))**nc1
+                      if ( core_template(k,j,i).eq.1 ) then
+                         rho(k,j,i) = rho_c1d*(h(k,j,i)/h_c1d)**nc1                  
                       else
-                         !rho(k,j,i) = rho_c1d*mu1/muc1*(h(k,j,i)/h_e1d)**n1
-                         rho(k,j,i) = rhom1*norm1*(h(k,j,i)/h_e1d)**n1
+                         rho(k,j,i) = rho_1d*(h(k,j,i)/h_e1d)**n1                         
                       endif
                    else   
                       rho(k,j,i) = 0.0
@@ -445,6 +429,9 @@ integer :: I, J, K, L, Q
                 enddo
              enddo
           enddo
+
+! print*, "rho_ccs (pre norm) = ", rho_cc1, rho_cc2
+
 
    ! Conditionally normalize wrt the central densities of the stars
       if ( norm_flag == 1 ) then
@@ -473,10 +460,11 @@ integer :: I, J, K, L, Q
                 enddo
              enddo
           enddo
+
       endif
 
-!print*, rm1,zm1,phim1
-!print*, rm2,zm2,phim2
+!print*, rm1,zm1,phim1, rho(rm1,zm1,phim1)
+!print*, rm2,zm2,phim2, rho(rm1,zm1,phim1)
 
 
    ! Zero out the density field between the axis and the inner boundary points
@@ -525,40 +513,54 @@ integer :: I, J, K, L, Q
    ! impose the axial boundary condition
       rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
 
+          rho_cc1 = rho(rm1,zm1,phim1)
+          rho_cc2 = rho(rm2,zm2,phim2)
+
+!print*, rm1,zm1,phim1, rho(rm1,zm1,phim1)
+!print*, rm2,zm2,phim2, rho(rm1,zm1,phim1)
+! print*, "rho_ccs (post norm) = ", rho_cc1, rho_cc2
 
 
 ! New thresholds
-!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid)-rho(rd+1,zd,phid))/2
-!          rho_1d = rho(rd,zd,phid) 
-!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
-!                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
-          rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
-                    rho(rd-1,zd,phid))/2
-          rho_c1d=rho_1d*muc1/mu1
+!          rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
+!                    rho(rd-af1,zd,phid))/2
+!          rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
+!                    rho(re-af2,ze,phie))/2
+!          rho_c1d=rho_1d*muc1/mu1
+!          rho_c2e=rho_2e*muc2/mu2
+!
 
-!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-rho(re+1,ze,phie))/2
-!          rho_2e = rho(re,ze,phie) 
-!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
-!                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
-          rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
-                    rho(re-1,ze,phie))/2
-          rho_c2e=rho_2e*muc2/mu2
-
-          rho_th1=rho_1d!+rho_c1d)/2.0
-          rho_th2=rho_2e!+rho_c2e)/2.0
 
 !print*, "rho_1d new ", rho_1d
 !print*, "rho_c1d new ", rho_c1d
 !print*,"rho(rd,zd,phid)",rho(rd,zd,phid)
 !print*,"rho(rd-1,zd,phid)",rho(rd-1,zd,phid)
 
-!print*,"rho_th1", rho_th1
 
 
-!call newpressure(rho,pres,h,rho_1d,rho_c1d,rho_2e,rho_c2e)
-!call output('null','pres',pres)
-call output('null','star',rho)
+   call output('null','star',rho)
+   call output('null','enth',h)
 
+! Print core_template slices
+  open(unit=10,file="template1")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,core_template(i,j,1)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File template1 printed"
+
+  open(unit=10,file="template2")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,core_template(i,j,numphi/2+1)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File template2 printed"
 
    ! has the solution converged?
    cnvgom = abs( (omsq(Q) - omsq(Q-1)) / omsq(Q) )
@@ -569,7 +571,7 @@ call output('null','star',rho)
 
    virial_error_prev = virial_error
 
-   call compute_virial_field(psi, rho_1d, rho_2e, h, sqrt(omsq(Q)), volume_factor, &
+   call compute_virial_field(psi, h, h_e1d, h_e2e, core_template, sqrt(omsq(Q)), volume_factor, &
                              virial_error1, virial_error2, virial_error, K_part, Pi_part, W_part)
 
 ! Calculating stuff for printing >>
@@ -581,13 +583,18 @@ call output('null','star',rho)
 !print*, "rmom1 = ", rhom1, "rhom2 = ", rhom2
 !print*, "",,"",
 
-call mass_param(rho, rho_1d, rho_2e, mass1(Q), mass2(Q),   &
+call mass_param(rho, h, h_e1d, h_e2e,core_template, sqrt(omsq(Q)), mass1(Q), mass2(Q),   &
                       mass_c1(Q), mass_c2(Q), xavg1, xavg2,   &
-                      com, separation)
+                      com, separation, spin1, spin2, ang_mom )
 
+
+print*, 3*spin1/ang_mom , 3*spin2/ang_mom
 !Find the diameter of the core and envelope in number of cells
   diac1=0
   diac2=0
+  diae1=0
+  diae2=0
+
   do i = rlwb, rupb
      if (rho(i,2,1).gt.(2*densmin)) then
         diae1=diae1+1
@@ -612,6 +619,9 @@ call mass_param(rho, rho_1d, rho_2e, mass1(Q), mass2(Q),   &
 
   ac1=0
   ac2=0
+  ae1=0
+  ae2=0 
+
   do i = 1, phi1
      if (rho(center1(1),2,i).gt.(2*densmin)) then
         ae1=ae1+1
@@ -654,10 +664,10 @@ write (char8, "(F10.7)") virial_error
        print*, "core1 resolution: ", diac1, ac1 
        print*, "core2 resolution: ", diac2, ac2
 
-      write(13,*) rho_cc1, rho_cc2,hm1(Q),hm2(Q)
+!      write(13,*) rho_cc1, rho_cc2,hm1(Q),hm2(Q)
 
       write(12,*) trim(char1),trim(char2),trim(char3),trim(char4),trim(char5),trim(char8)
-      write(19,*) K_part, Pi_part, W_part 
+!      write(19,*) K_part, Pi_part, W_part 
 ! Finished printing stuff ^^
 
 ! Convergance test
@@ -720,52 +730,37 @@ do K = philwb, phiupb
    enddo
 enddo
 
-! now calculate the final angular frequency
+! now calculate the final angular frequency and integration constants
       pot_a = 0.5*(pot_it(ra,za,phia) + pot_it(ra-1,za,phia))
       pot_b = 0.5*(pot_it(rb,zb,phib) + pot_it(rb+1,zb,phib))
       pot_c = 0.5*(pot_it(rc,zc,phic) + pot_it(rc+1,zc,phic))
-      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+1,zd,phid))
-      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+1,ze,phie))
-!      pot_d = pot_it(rd,zd,phid)
-!      pot_e = pot_it(re,ze,phie)
+      pot_d = 0.5*(pot_it(rd,zd,phid) + pot_it(rd+af1,zd,phid))
+      pot_e = 0.5*(pot_it(re,ze,phie) + pot_it(re+af2,ze,phie))
 
       psi_a = 0.5*(psi(ra,phia) + psi(ra-1,phia))
       psi_b = 0.5*(psi(rb,phib) + psi(rb+1,phib))
       psi_c = 0.5*(psi(rc,phic) + psi(rc+1,phic))
-      psi_d = 0.5*(psi(rd,phid) + psi(rd+1,phid))
-      psi_e = 0.5*(psi(re,phie) + psi(re+1,phie))
-!      psi_d = psi(rd,phid)
-!      psi_e = psi(re,phie)
-
-
-          
+      psi_d = 0.5*(psi(rd,phid) + psi(rd+af1,phid))
+      psi_e = 0.5*(psi(re,phie) + psi(re+af2,phie))
+ 
       omsq(qfinal) = - (pot_a-pot_b)/(psi_a-psi_b) 
 
-! and calculate the two integration constants
-          c1(qfinal) = pot_b + omsq(q)*psi_b
-          c2(qfinal) = pot_c + omsq(q)*psi_c
+      c1(qfinal) = pot_b + omsq(q)*psi_b
+      c2(qfinal) = pot_c + omsq(q)*psi_c
        
-!          rho_1d = rho(rd,zd,phid)
-!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid)-rho(rd+1,zd,phid))/2
-!          rho_1d = rho(rd,zd,phid) + (rho(rd,zd,phid) -     &
-!                   min(rho(rd-1,zd,phid),rho(rd+1,zd,phid)))/2
-          rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
-                    rho(rd-1,zd,phid))/2
-          rho_c1d= rho_1d*muc1/mu1       
-          h_e1d = c1(q) - pot_d - omsq(q)*psi_d
-          h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1                    
-          cc1(qfinal) = h_c1d + pot_d+ omsq(q)*psi_d 
-        
-!          rho_2e = rho(re,ze,phie) 
-!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-rho(re+1,ze,phie))/2
-!          rho_2e = rho(re,ze,phie) + (rho(re,ze,phie)-      &
-!                   min(rho(re-1,ze,phie),rho(re+1,ze,phie)))/2
-          rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
-                    rho(re-1,ze,phie))/2
-          rho_c2e = rho_2e*muc2/mu2       
-          h_e2e = c2(q) - pot_e - omsq(q)*psi_e
-          h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2                    
-          cc2(qfinal) = h_c2e + pot_e+ omsq(q)*psi_e
+      rho_1d = rho(rd,zd,phid) + abs(rho(rd,zd,phid) -     &
+               rho(rd-af1,zd,phid))/2
+      rho_c1d= rho_1d*muc1/mu1
+      h_e1d = c1(q) - pot_d - omsq(q)*psi_d
+      h_c1d = h_e1d * (nc1+1)/(n1+1)*mu1/muc1
+      cc1(qfinal) = h_c1d + pot_d+ omsq(q)*psi_d
+
+      rho_2e = rho(re,ze,phie) + abs(rho(re,ze,phie)-      &
+               rho(re-af2,ze,phie))/2
+      rho_c2e = rho_2e*muc2/mu2
+      h_e2e = c2(q) - pot_e - omsq(q)*psi_e
+      h_c2e = h_e2e * (nc2+1)/(n2+1)*mu2/muc2
+      cc2(qfinal) = h_c2e + pot_e+ omsq(q)*psi_e
 
 
   hm1(qfinal) = hm1(qfinal-1)
@@ -776,6 +771,13 @@ enddo
   mass2(qfinal) = mass2(qfinal-1)
   mass_c1(qfinal) = mass_c1(qfinal-1)
   mass_c2(qfinal) = mass_c2(qfinal-1)
+
+  phiem1 = 1
+  phiem2 = numphi/2+1
+  zem1 = 1
+  zem2 = 1
+  rem1 = 1
+  rem2 = 1
   rhoem1 = rho(rem1,zem1,phiem1)
   rhoem2 = rho(rem2,zem2,phiem2)  
 
@@ -792,11 +794,11 @@ enddo
 !  print*, "kappac2=",kappac2,"kappae2=",kappae2
 
 
-call newpressure(rho,pres,h,rho_1d,rho_2e)
+call newpressure(rho,pres, h, h_e1d, h_e2e, core_template)
    call output('pressure.bin','newpres',pres)
 
 
-!   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_2e)
+!   call compute_pressure(rho,pres,kappac1,kappae1,kappac2,kappae2,rho_1d,rho_2e,rho_c1d,rho_c2e)
 
 !          pres_d = pres(rd,zd,phid)
 !          pres_e = pres(re,ze,phie)
@@ -807,7 +809,7 @@ call newpressure(rho,pres,h,rho_1d,rho_2e)
 !   write(13,*) 'Model: ', model_number, ' done in time: ', time2 - time1
 
    call binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h, &
-            qfinal, initial_model_type, model_number, ra, za, phia,          &
+             h_e1d, h_e2e, core_template, qfinal, initial_model_type, model_number, ra, za, phia,&
             rb, zb, phib, rc, zc, phic, rd, zd, phid, re, ze, phie,          &
             rhm1, rhm2, rho_cc1, rho_cc2, xavg1, xavg2, separation,              &
             com, volume_factor, hem1, hem2, rhoem1, rhoem2,                  &
@@ -848,6 +850,26 @@ call newpressure(rho,pres,h,rho_1d,rho_2e)
    call output('enthalpy.bin','enth',h)
    call output('pot.bin','pot',pot)
    call output('pot_eff.bin','eff',temp_map)
+
+
+   open(unit=50,file="core_template.bin",form='unformatted',convert='BIG_ENDIAN',status='unknown')
+      write(50) core_template
+   close(50)
+
+
+
+
+   open(unit=10,file="ctemp")
+    do j=1,numz
+      do i=1,numr
+        write(10,*) i,j,core_template(i,j,2)
+      enddo
+      write(10,*)
+    enddo
+  close(10)
+  print*, "File ctemp printed"
+
+
 
 !Diagnostic pressure files!
   open(unit=10,file="p2")
@@ -934,8 +956,8 @@ call newpressure(rho,pres,h,rho_1d,rho_2e)
 !call cpu_time(time2)
 
 !   write(13,*) 'Model: ', model_number, ' disk I/O done in time: ', time2 - time1
-   close(19)
-   close(13)
+!   close(19)
+!   close(13)
    close(12)
 
 end subroutine binary_scf

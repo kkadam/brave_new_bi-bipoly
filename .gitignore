@@ -12,10 +12,12 @@ scf
 # Misc
 *.bin
 pbs_out
-tmr_array
-smz_array
+tmr_array*
+smz_array*
 *1
 *2
 *_log*
 autoread.dat
 model_details*
+*.f90_*
+init_*

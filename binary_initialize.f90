@@ -24,7 +24,9 @@ integer, intent(in) :: initial_model_type
 !  initial_model_type = 1 ==> spherical Gausssian
 !                     = 2 ==> uniform density sphere
 !                     = 3 ==> n=1 polytrope
-!                     = 4 ==> use existing density, file nnamed density.init
+!                     = 4 ==> double gaussian
+!                     = 5 ==> double gaussian with density jump
+!                     = 6 ==> use existing density, file nnamed density.init
 !
 !****************************************************************************************
 !
@@ -408,7 +410,7 @@ end select
    rho(rlwb-1,:,:) = cshift(rho(rlwb,:,:),dim=2,shift=numphi/2)
 
 
-   call output('rhoinit.bin','rhoinit',rho)
+!   call output('rhoinit.bin','rhoinit',rho)
 
 
 end subroutine binary_initialize

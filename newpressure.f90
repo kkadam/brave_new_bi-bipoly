@@ -1,24 +1,21 @@
-subroutine newpressure(rho,pres,h,rho_1d,rho_2e)
+subroutine newpressure(rho,pres, h, h_e1d, h_e2e, core_template)
 implicit none
 include 'runscf.h'
    real, dimension(numr,numz,numphi) :: rho, pres, h
-   real ::  rho_1d, rho_2e
-   real :: rhoth1, rhoth2
+   integer, dimension(numr, numz, numphi), intent(in) :: core_template
+
+   real ::  h_e1d, h_e2e
    integer :: i,j,k
 
 !
 !**************************************************************************************************
 !
 
-   rhoth1=rho_1d
-   rhoth2=rho_2e
-
-
 !Calculate pressure from density and enthalpy fields
    do i = 1,phi1+1
       do j = 1,numz
          do k = 1,numr
-            if (rho(k,j,i).gt.rhoth1) then
+            if ( core_template(k,j,i).eq.1 ) then
                pres(k,j,i) = h(k,j,i)*rho(k,j,i)/(1.0+nc1)
             else
                pres(k,j,i) = h(k,j,i)*rho(k,j,i)/(1.0+n1)                   
@@ -30,7 +27,7 @@ include 'runscf.h'
    do i = phi2,phi3+1
       do j = 1,numz
          do k = 1,numr
-            if (rho(k,j,i).gt.rhoth2) then
+            if ( core_template(k,j,i).eq.1 ) then
                pres(k,j,i) = h(k,j,i)*rho(k,j,i)/(1.0+nc2)
             else
                pres(k,j,i) = h(k,j,i)*rho(k,j,i)/(1.0+n2)
@@ -42,7 +39,7 @@ include 'runscf.h'
    do i = phi4,numphi
       do j = 1,numz
          do k = 1,numr
-            if (rho(k,j,i).gt.rhoth1) then
+            if ( core_template(k,j,i).eq.1 ) then
                pres(k,j,i) = h(k,j,i)*rho(k,j,i)/(1.0+nc1)
             else
                pres(k,j,i) = h(k,j,i)*rho(k,j,i)/(1.0+n1)

@@ -1,9 +1,9 @@
 !********************************************************************
 !*
-!*  mass_param
+!*  newparam
 !*
 !********************************************************************
-subroutine mass_param(rho, h, h_e1d, h_e2e, core_template, omega, mass1, mass2,   &
+subroutine mass_param(rho, omega, rho_1d, rho_2e, mass1, mass2,   &
                       mass_c1, mass_c2, xavg1, xavg2,   &
                       com, separation, spin1, spin2, ang_mom )
 implicit none
@@ -17,9 +17,8 @@ include 'runscf.h'
 !********************************************************************
 !*
 !*  Subroutine Arguemtns
-   real, dimension(numr,numz,numphi), intent(in) :: rho, h
-   integer, dimension(numr, numz, numphi), intent(in) :: core_template
-   real, intent(in) :: omega, h_e1d, h_e2e
+   real, dimension(numr,numz,numphi), intent(in) :: rho
+   real, intent(in) :: omega, rho_1d, rho_2e
    real, intent(out) :: mass1, mass2, mass_c1, mass_c2, xavg1, xavg2, &
                      com, separation, spin1, spin2, ang_mom
 
@@ -66,8 +65,6 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
    ang_mom =0.0
    volume_factor = 2.0 * dr * dz * dphi
 
-
-
 ! Calculate the total mass for each star  and core mass for each star
    temp = 0.0
    do K = philwb, phiupb
@@ -86,7 +83,7 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
    do i = 1, numphi
       do j = 2, numz
          do k = 2, numr
-            if ( core_template(k,j,i).eq.1 ) then
+            if (rho(k,j,i).gt.rho_1d) then
                temp(k,j,i) = rhf(k)*rho(k,j,i)
             endif
          enddo
@@ -99,7 +96,7 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
    do i = 1, numphi
       do j = 2, numz
          do k = 2, numr
-            if ( core_template(k,j,i).eq.1 ) then
+            if (rho(k,j,i).gt.rho_2e) then
                 temp(k,j,i) = rhf(k)*rho(k,j,i)
             endif
          enddo
@@ -107,6 +104,21 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
    enddo
    call binary_sum(temp, ret1, ret2)
    mass_c2 = volume_factor*ret2
+
+!!!!!!!!
+
+   do i = 1, numphi
+      do j = 2, numz
+         do k = 2, numr
+             rho(k,j,i) * xx() * rhf(
+
+         enddo
+       enddo
+   enddo
+
+
+
+
 
 
 ! Calculate the center of mass for each star
@@ -129,4 +141,4 @@ common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
 call compute_spins(rho,omega,com,xavg1,xavg2,spin1,spin2,ang_mom)
 
 
-end subroutine mass_param
+end subroutine newparam

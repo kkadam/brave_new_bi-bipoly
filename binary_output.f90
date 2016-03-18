@@ -55,6 +55,9 @@ subroutine binary_output(c1, c2, cc1, cc2, omsq, hm1, hm2, mass1, mass2, psi, h,
   real, dimension(numphi) :: cosine, sine
   common /trig/ cosine, sine
 
+  real :: dr, dz, dphi, drinv, dzinv, dphiinv
+  common /coord_differentials/ dr, dz, dphi, drinv, dzinv, dphiinv
+
 !*******************************************************************************
 !
 ! locall variables
@@ -611,9 +614,9 @@ write(11,*) 'Pressure Maximum: ', pm1
 write(11,*) 'Enthaply Maximum: ', hm1(qfinal)
 write(11,*) 'Maximum at (r, z, phi): ', rhm1
 write(11,*) 'Inner Boundary Point: ', rb, zb, phib
-write(11,*) '(r, z, phi): ', rhf_g(rb), zhf_g(zb), phi(phib)
+write(11,*) '(r, z, phi): ', rhf_g(rb)+dr/2, zhf_g(zb), phi(phib)
 write(11,*) 'Outer Boundary Point: ', ra, za, phia
-write(11,*) '(r, z, phi): ', rhf_g(ra), zhf_g(za), phi(phia)
+write(11,*) '(r, z, phi): ', rhf_g(ra)-dr/2, zhf_g(za), phi(phia)! A is treated differently!
 write(11,*) 'Volume: ', vol1
 write(11,*) 'Effective Radius: ', reff1
 write(11,*) 'Roche Volume: ', volr1
@@ -651,7 +654,7 @@ write(11,*) 'Pressure Maximum: ', pm2
 write(11,*) 'Enthalpy Maximum: ', hm2(qfinal)
 write(11,*) 'Maximum at (r, z, phi): ', rhm2
 write(11,*) 'Inner Boundary Point: ', rc, zc, phic
-write(11,*) '(r, z, phi): ', rhf_g(rc), zhf_g(zc), phi(phic)
+write(11,*) '(r, z, phi): ', rhf_g(rc)+dr/2, zhf_g(zc), phi(phic)
 write(11,*) 'Volume: ', vol2
 write(11,*) 'Effective Radius: ', reff2
 write(11,*) 'Roche Volume: ', volr2
